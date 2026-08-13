@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LedgerAI</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@700;800&family=JetBrains+Mono:wght@400;700&family=Caveat:wght@400;700&family=Indie+Flower&family=Shadows+Into+Light&display=swap" rel="stylesheet">
+
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^12.23.24",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.552.0",
+    "recharts": "https://aistudiocdn.com/recharts@^3.3.0",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.28.0",
+    "uuid": "https://aistudiocdn.com/uuid@^13.0.0",
+    "dexie": "https://aistudiocdn.com/dexie@^4.0.1",
+    "dexie-react-hooks": "https://aistudiocdn.com/dexie-react-hooks@^4.2.0"
+  }
+}
+</script>
+    <style>
+        :root, .theme-dark {
+            color-scheme: dark;
+            --bg-primary: #0f172a; /* slate-900 */
+            --bg-secondary: #1e293b; /* slate-800 */
+            --bg-tertiary: #334155; /* slate-700 */
+            --bg-interactive-hover: rgba(51, 65, 85, 0.5); /* slate-700/50 */
+            --bg-secondary-translucent: rgba(30, 41, 59, 0.5);
+            --bg-backdrop: rgba(0, 0, 0, 0.5);
+
+            --text-primary: #cbd5e1; /* slate-300 */
+            --text-secondary: #94a3b8; /* slate-400 */
+            --text-tertiary: #64748b; /* slate-500 */
+            --text-white: #f8fafc; /* slate-50 */
+            --text-contrast: #0f172a;
+
+            --border-primary: #334155;
+            --border-primary-translucent: rgba(51, 65, 85, 0.5);
+            --border-accent-translucent: rgba(59, 130, 246, 0.5);
+
+            --accent-primary: #3b82f6; /* blue-500 */
+            --accent-primary-dark: #1d4ed8; /* blue-700 */
+            --accent-primary-gradient-from: #2563eb; /* blue-600 */
+            --accent-primary-gradient-to: #4f46e5; /* indigo-700 */
+            --accent-primary-shadow: rgba(59, 130, 246, 0.3);
+            --accent-primary-light: #60a5fa; /* blue-400 */
+
+            --positive: #16a34a; /* green-600 */
+            --positive-text: #4ade80; /* emerald-400 */
+            --positive-bg-light: rgba(74, 222, 128, 0.1);
+            --positive-bg-translucent: rgba(74, 222, 128, 0.2);
+
+            --negative: #e11d48; /* rose-600 */
+            --negative-text: #f87171; /* rose-400 */
+            --negative-bg-light: rgba(248, 113, 113, 0.1);
+
+            --warning: #f59e0b; /* amber-500 */
+            --warning-text: #fbbf24; /* amber-400 */
+            --warning-bg-light: rgba(245, 158, 11, 0.1);
+            --accent-primary-bg-light: rgba(59, 130, 246, 0.1);
+        }
+
+        .theme-light {
+            color-scheme: light;
+            --bg-primary: #f1f5f9; /* slate-100 */
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e2e8f0; /* slate-200 */
+            --bg-interactive-hover: rgba(226, 232, 240, 0.5);
+            --bg-secondary-translucent: rgba(255, 255, 255, 0.5);
+            --bg-backdrop: rgba(255, 255, 255, 0.5);
+
+            --text-primary: #1e293b; /* slate-800 */
+            --text-secondary: #64748b; /* slate-500 */
+            --text-tertiary: #94a3b8; /* slate-400 */
+            --text-white: #1e293b;
+            --text-contrast: #ffffff;
+
+            --border-primary: #e2e8f0;
+            --border-primary-translucent: rgba(226, 232, 240, 0.5);
+            --warning-bg-light: rgba(245, 158, 11, 0.1);
+            --accent-primary-bg-light: rgba(59, 130, 246, 0.1);
+        }
+
+        .theme-true-black {
+            color-scheme: dark;
+            --bg-primary: #000000;
+            --bg-secondary: #111111;
+            --bg-tertiary: #222222;
+            --bg-interactive-hover: rgba(34, 34, 34, 0.5);
+            --bg-secondary-translucent: rgba(17, 17, 17, 0.5);
+        }
+
+        .theme-cyborg {
+            color-scheme: dark;
+            --bg-primary: #0a192f;
+            --bg-secondary: #172a45;
+            --bg-tertiary: #303C55;
+            --bg-interactive-hover: rgba(48, 60, 85, 0.5);
+            --bg-secondary-translucent: rgba(23, 42, 69, 0.5);
+
+            --text-primary: #ccd6f6;
+            --text-secondary: #8892b0;
+            --text-tertiary: #a8b2d1;
+            --text-white: #e6f1ff;
+            --text-contrast: #0a192f;
+
+            --border-primary: #303C55;
+            --border-primary-translucent: rgba(48, 60, 85, 0.5);
+            --border-accent-translucent: rgba(100, 255, 218, 0.5);
+
+            --accent-primary: #64ffda;
+            --accent-primary-dark: #00bfa5;
+            --accent-primary-gradient-from: #64ffda;
+            --accent-primary-gradient-to: #00e6a3;
+            --accent-primary-shadow: rgba(100, 255, 218, 0.2);
+            --accent-primary-light: #79ffee;
+            
+            --positive-text: #64ffda;
+            --negative-text: #ff8a8a;
+            --warning-text: #ffd700;
+        }
+
+        .theme-terminal {
+            color-scheme: dark;
+            --bg-primary: #000000;
+            --bg-secondary: #050505;
+            --bg-tertiary: #111111;
+            --bg-interactive-hover: rgba(0, 255, 65, 0.1);
+            --bg-secondary-translucent: rgba(5, 5, 5, 0.5);
+
+            --text-primary: #00ff41;
+            --text-secondary: #008f11;
+            --text-tertiary: #003b00;
+            --text-white: #00ff41;
+            --text-contrast: #000000;
+
+            --border-primary: #003b00;
+            --border-primary-translucent: rgba(0, 59, 0, 0.5);
+            --border-accent-translucent: rgba(0, 255, 65, 0.5);
+
+            --accent-primary: #00ff41;
+            --accent-primary-dark: #008f11;
+            --accent-primary-gradient-from: #00ff41;
+            --accent-primary-gradient-to: #008f11;
+            --accent-primary-shadow: rgba(0, 255, 65, 0.2);
+            --accent-primary-light: #00ff41;
+            
+            --positive-text: #00ff41;
+            --negative-text: #ff3e3e;
+            --warning-text: #f0f000;
+        }
+
+        .theme-terminal body {
+            font-family: 'JetBrains Mono', monospace !important;
+        }
+
+        .theme-sunset {
+            color-scheme: dark;
+            --bg-primary: #120422;
+            --bg-secondary: #1e0a3c;
+            --bg-tertiary: #2d1254;
+            --bg-interactive-hover: rgba(255, 126, 95, 0.1);
+            --bg-secondary-translucent: rgba(30, 10, 60, 0.5);
+            --bg-backdrop: rgba(18, 4, 34, 0.7);
+
+            --text-primary: #f3e8ff;
+            --text-secondary: #c084fc;
+            --text-tertiary: #a855f7;
+            --text-white: #ffffff;
+            --text-contrast: #120422;
+
+            --border-primary: #3b1e6d;
+            --border-primary-translucent: rgba(59, 30, 109, 0.5);
+            --border-accent-translucent: rgba(255, 126, 95, 0.5);
+
+            --accent-primary: #ff7e5f;
+            --accent-primary-dark: #e65100;
+            --accent-primary-gradient-from: #ff7e5f;
+            --accent-primary-gradient-to: #feb47b;
+            --accent-primary-shadow: rgba(255, 126, 95, 0.3);
+            --accent-primary-light: #feb47b;
+
+            --positive-text: #4ade80;
+            --negative-text: #f87171;
+            --warning-text: #fbbf24;
+        }
+
+        .theme-paper {
+            color-scheme: light;
+            --bg-primary: #fdfaf1;
+            --bg-secondary: #fefcf6;
+            --bg-tertiary: #f4f1e6;
+            --bg-interactive-hover: rgba(0, 0, 255, 0.03);
+            --bg-secondary-translucent: rgba(254, 252, 246, 0.8);
+            --bg-backdrop: rgba(253, 250, 241, 0.8);
+
+            --text-primary: #2c3e50;
+            --text-secondary: #34495e;
+            --text-tertiary: #7f8c8d;
+            --text-white: #2c3e50;
+            --text-contrast: #fdfaf1;
+
+            --border-primary: #e0ddd0;
+            --border-primary-translucent: rgba(224, 221, 208, 0.5);
+            --border-accent-translucent: rgba(41, 128, 185, 0.3);
+
+            --accent-primary: #2980b9;
+            --accent-primary-dark: #1a5276;
+            --accent-primary-gradient-from: #2980b9;
+            --accent-primary-gradient-to: #3498db;
+            --accent-primary-shadow: rgba(41, 128, 185, 0.2);
+            --accent-primary-light: #3498db;
+
+            --positive: #27ae60;
+            --positive-text: #27ae60;
+            --negative: #c0392b;
+            --negative-text: #c0392b;
+            --warning: #f39c12;
+            --warning-text: #f39c12;
+        }
+
+        .theme-earthy {
+            color-scheme: light;
+            --bg-primary: #F1E3D3; /* bg-almond */
+            --bg-secondary: #E6D5C3; /* soft-sand */
+            --bg-tertiary: #D4D4C4; /* warm-ash */
+            --bg-interactive-hover: rgba(176, 94, 60, 0.08);
+            --bg-secondary-translucent: rgba(230, 213, 195, 0.5);
+            --bg-backdrop: rgba(45, 45, 45, 0.3);
+
+            --text-primary: #2D2D2D; /* text-main */
+            --text-secondary: #4D5240; /* deep-olive */
+            --text-tertiary: #6B705C; /* sage-green */
+            --text-white: #2D2D2D;
+            --text-contrast: #F1E3D3;
+
+            --border-primary: #C9C9B9;
+            --border-primary-translucent: rgba(201, 201, 185, 0.5);
+            --border-accent-translucent: rgba(176, 94, 60, 0.3);
+
+            --accent-primary: #B05E3C; /* warm-terracotta */
+            --accent-primary-dark: #8E4A2F;
+            --accent-primary-gradient-from: #B05E3C;
+            --accent-primary-gradient-to: #C58C6D;
+            --accent-primary-shadow: rgba(176, 94, 60, 0.2);
+            --accent-primary-light: #C58C6D;
+
+            --positive: #5A6145;
+            --positive-text: #5A6145;
+            --negative: #964B3E;
+            --negative-text: #964B3E;
+            --warning: #A67D3D;
+            --warning-text: #A67D3D;
+            
+            --accent-primary-bg-light: rgba(176, 94, 60, 0.1);
+            --warning-bg-light: rgba(166, 125, 61, 0.1);
+        }
+
+        .theme-earthy h1, .theme-earthy h2, .theme-earthy h3, .theme-earthy h4, .theme-earthy h5, .theme-earthy h6 {
+            font-family: 'Plus Jakarta Sans', sans-serif !important;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+        }
+
+        .theme-earthy body {
+            font-family: 'Inter', sans-serif !important;
+            background-color: #F1E3D3;
+        }
+
+        .theme-paper body {
+            font-family: 'Caveat', cursive !important;
+            background-color: #fdfaf1;
+            background-image: 
+                linear-gradient(90deg, transparent 79px, #ff9999 79px, #ff9999 81px, transparent 81px),
+                linear-gradient(#e5e5e5 0.1em, transparent 0.1em);
+            background-size: 100% 100%, 100% 1.5rem;
+            background-attachment: fixed;
+            position: relative;
+        }
+
+        .theme-paper body::after {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("https://www.transparenttextures.com/patterns/paper.png");
+            opacity: 0.1;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .theme-paper h1, .theme-paper h2, .theme-paper h3, .theme-paper p, .theme-paper span, .theme-paper div, .theme-paper button, .theme-paper input, .theme-paper select, .theme-paper textarea {
+            font-family: 'Caveat', cursive !important;
+            font-weight: 500;
+            font-size: 1.15rem;
+        }
+
+        .theme-paper h1 { font-size: 2.5rem !important; }
+        .theme-paper h2 { font-size: 1.8rem !important; }
+        .theme-paper h3 { font-size: 1.4rem !important; }
+        .theme-paper .text-xs { font-size: 0.9rem !important; }
+        .theme-paper .text-[10px] { font-size: 0.85rem !important; }
+
+        .theme-paper .bg-secondary, 
+        .theme-paper .bg-\[var\(--bg-secondary\)\],
+        .theme-paper .bg-gradient-to-br {
+            box-shadow: 3px 3px 10px rgba(0,0,0,0.05);
+            border-radius: 4px !important;
+            border: 1px solid #e0ddd0 !important;
+            position: relative;
+            overflow: visible !important;
+            background-color: var(--bg-secondary) !important;
+            background-image: radial-gradient(#f4f1e6 1px, transparent 1px) !important;
+            background-size: 20px 20px !important;
+        }
+
+        .theme-paper .bg-white\/20, 
+        .theme-paper .bg-white\/10,
+        .theme-paper .bg-white\/5 {
+            background-color: rgba(0, 0, 0, 0.05) !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+        }
+
+        /* Torn paper effect for cards */
+        .theme-paper .bg-secondary::before,
+        .theme-paper .bg-\[var\(--bg-secondary\)\]::before {
+            content: "";
+            position: absolute;
+            top: -5px;
+            left: 0;
+            right: 0;
+            height: 10px;
+            background: linear-gradient(135deg, #fdfaf1 5px, transparent 0),
+                        linear-gradient(-135deg, #fdfaf1 5px, transparent 0);
+            background-size: 10px 10px;
+            background-position: left top;
+            z-index: 1;
+        }
+
+        .theme-paper nav {
+            border-right: 2px solid #ff9999 !important;
+            background-image: radial-gradient(#d1cfc5 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        /* Spiral binder effect for nav */
+        .theme-paper nav::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 5px;
+            bottom: 0;
+            width: 10px;
+            background-image: radial-gradient(circle, #7a7a7a 3px, transparent 3px);
+            background-size: 100% 30px;
+            opacity: 0.3;
+        }
+
+        .theme-paper .rounded-3xl,
+        .theme-paper .rounded-2xl {
+            border-radius: 4px !important;
+        }
+
+        .theme-paper .rounded-xl {
+            border-radius: 2px !important;
+        }
+
+        /* Fix More menu alignment on mobile - Position it relative to the bottom but high enough to clear everything */
+        @media (max-width: 767px) {
+            .theme-paper .absolute.bottom-24 {
+                position: absolute !important;
+                bottom: 200% !important; /* Position it significantly above the navigation bar */
+                margin-bottom: 2rem !important; /* Extra gap to ensure it clears the footer */
+                left: 50% !important;
+                right: auto !important;
+                top: auto !important;
+                width: 90vw !important;
+                max-width: 320px !important;
+                transform: translateX(-50%) !important;
+                max-height: 50vh !important;
+                overflow-y: auto !important;
+                z-index: 2000 !important;
+                border-radius: 20px !important;
+                background-color: #fefcf6 !important;
+                padding: 1.5rem !important;
+                padding-bottom: 3rem !important; /* Extra space for the last item */
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4) !important;
+                border: 3px solid #e0ddd0 !important;
+            }
+            /* Remove torn paper effect for the menu specifically to avoid layout issues */
+            .theme-paper .absolute.bottom-24::before {
+                display: none !important;
+            }
+        }
+
+        /* Make inputs look like they are written on the lines */
+        .theme-paper input, .theme-paper select, .theme-paper textarea {
+            background-color: transparent !important;
+            border-bottom: 1px dashed #7a7a7a !important;
+            border-radius: 0 !important;
+            border-top: none !important;
+            border-left: none !important;
+            border-right: none !important;
+        }
+
+        .theme-paper .text-primary, .theme-paper .text-\[var\(--text-primary\)\] {
+            text-shadow: 0.5px 0.5px 1px rgba(0,0,0,0.1);
+        }
+
+        .theme-paper ::-webkit-scrollbar {
+            width: 8px;
+        }
+        .theme-paper ::-webkit-scrollbar-track {
+            background: #fdfaf1;
+        }
+        .theme-paper ::-webkit-scrollbar-thumb {
+            background: #d1cfc5;
+            border-radius: 4px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            margin: 0;
+            padding: 0;
+            background-color: #0f172a; /* Default dark background for smooth loading */
+        }
+    </style>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>

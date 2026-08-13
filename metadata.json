@@ -1,0 +1,9 @@
+{
+  "name": "LedgerAI",
+  "description": "An AI-powered financial tracking system for emerging markets. Features a voice-first interface, AI categorization, and a future-proof Bank Connectivity Layer for global expense importing.",
+  "requestFramePermissions": [
+    "microphone",
+    "camera",
+    "geolocation"
+  ]
+}
