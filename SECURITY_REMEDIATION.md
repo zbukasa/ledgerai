@@ -26,19 +26,15 @@ from the code (done) is not enough — **they must be rotated**.
       `BANK_TOKEN_ENCRYPTION_KEY` (the server now refuses to start without them).
       Generate with: `openssl rand -base64 48`
 
-## 🔴 Purge git history
+## ✅ Purge git history — DONE 2026-08-13
 
-The secrets remain in the git history (commit `2cc55a2`) even though the working tree is
-clean. Since this is effectively a single-commit repo:
+The full history (including Android-fix commits pushed from the other machine) was
+squashed into a fresh root commit `6811302` with no secret strings, force-pushed to
+`origin/main`, and local reflogs/objects were gc'd.
 
-- [ ] Purge with `git filter-repo` (preferred) or BFG:
-      ```
-      git filter-repo --path src/db/push.ts --path test-db-connection.ts --invert-paths
-      # then re-add the cleaned versions
-      ```
-      Or, simplest for a fresh repo: squash to a new root commit after confirming no
-      secret strings remain in the history (`git log -p | grep -i <old-password>`).
-- [ ] Force-push if this was ever pushed to a remote, and rotate anything exposed.
+**Note:** GitHub can keep serving the old commits by SHA until its server-side gc runs.
+Credential rotation (above) is therefore still mandatory; optionally contact GitHub
+support to expedite removal of the cached commits.
 
 ## 🟠 Run the database migration
 
