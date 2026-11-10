@@ -448,7 +448,14 @@
     "syncComplete": "Sync esili: {count} ba transactions ya sika.",
     "syncFailed": "Sync ekweyi",
     "ledgerUpdated": "Ledger ebongisami: {count} transactions ekoti.",
-    "pushFailed": "Ekweyi: {error}"
+    "pushFailed": "Ekweyi: {error}",
+    "disconnect": "Kokata boyokani",
+    "disconnectTitle": "Okata boyokani na banki oyo?",
+    "disconnectBody": "Tokolongola nzela ya LedgerAI na banki oyo mpe tokolongola mpo na libela ba compte, ba solde mpe ba transaction oyo tozwaki kuna. Okoki kozongisa yango te.",
+    "disconnectPurgeLedger": "Longola mpe ba transaction oyo nakotisaki na buku na ngai ya mitango longwa na banki oyo",
+    "cancel": "Kotika",
+    "disconnected": "Boyokani na banki ekatami mpe ba données na yango elongolami.",
+    "disconnectFailed": "Tokoki kokata boyokani na banki te. Svp meka lisusu."
   },
   "voice": {
     "start": "Koma na mongongo"

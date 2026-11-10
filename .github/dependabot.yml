@@ -1,0 +1,18 @@
+# Dependency update PRs. Security alerts/updates are separate repo settings:
+# Settings → Code security → enable Dependabot alerts and Dependabot security updates.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    groups:
+      # Bundle routine minor/patch bumps into one PR; majors arrive individually.
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

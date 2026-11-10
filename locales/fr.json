@@ -461,7 +461,14 @@
     "syncComplete": "Sync terminée : {count} nouvelles transactions.",
     "syncFailed": "Échec de la sync",
     "ledgerUpdated": "Grand livre mis à jour : {count} transactions.",
-    "pushFailed": "Échec : {error}"
+    "pushFailed": "Échec : {error}",
+    "disconnect": "Déconnecter",
+    "disconnectTitle": "Déconnecter cette banque ?",
+    "disconnectBody": "Nous révoquerons l'accès de LedgerAI à cette banque et supprimerons définitivement les comptes, soldes et transactions que nous en avons récupérés. Cette action est irréversible.",
+    "disconnectPurgeLedger": "Supprimer aussi les transactions que j'ai importées dans mon registre depuis cette banque",
+    "cancel": "Annuler",
+    "disconnected": "Banque déconnectée et ses données supprimées.",
+    "disconnectFailed": "Impossible de déconnecter la banque. Veuillez réessayer."
   },
   "voice": {
     "start": "Entrée Vocale"

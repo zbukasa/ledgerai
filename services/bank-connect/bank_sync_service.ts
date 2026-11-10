@@ -79,12 +79,14 @@ export class BankSyncService {
     /**
      * Persists transactions to the database using onConflictDoNothing for idempotency.
      */
-    async persistTransactions(transactions: BankTransaction[]): Promise<{ inserted: number }> {
+    async persistTransactions(connectionId: string, transactions: BankTransaction[]): Promise<{ inserted: number }> {
         let insertedCount = 0;
         for (const tx of transactions) {
             try {
                 const result = await db.insert(schema.bankTransactions).values({
                     id: uuidv4(),
+                    // Owning connection: ownership checks and unlink/account deletion are scoped by it.
+                    connectionId,
                     accountId: tx.accountId,
                     providerTxnId: tx.providerTxnId,
                     postedAt: tx.postedAt,
@@ -99,7 +101,9 @@ export class BankSyncService {
                     hashIdempotency: tx.hashIdempotency,
                     needsReview: tx.needsReview || false,
                     createdAt: new Date()
-                }).onConflictDoNothing({ target: schema.bankTransactions.hashIdempotency }).returning({ id: schema.bankTransactions.id });
+                // No explicit target: skip on either unique key ((account, provider txn id) or
+                // (account, hash)). A single-column target matches no constraint and errors.
+                }).onConflictDoNothing().returning({ id: schema.bankTransactions.id });
                 
                 if (result.length > 0) {
                     insertedCount++;

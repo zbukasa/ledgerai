@@ -448,7 +448,14 @@
     "syncComplete": "Usawazishaji umekamilika: miamala {count} mipya.",
     "syncFailed": "Usawazishaji umeshindwa",
     "ledgerUpdated": "Ledger imesasishwa: miamala {count} imeingizwa.",
-    "pushFailed": "Imeshindwa kusukuma: {error}"
+    "pushFailed": "Imeshindwa kusukuma: {error}",
+    "disconnect": "Tenganisha",
+    "disconnectTitle": "Tenganisha benki hii?",
+    "disconnectBody": "Tutaondoa ruhusa ya LedgerAI kwa benki hii na kufuta kabisa akaunti, salio na miamala tuliyopata kutoka kwake. Kitendo hiki hakiwezi kutenduliwa.",
+    "disconnectPurgeLedger": "Pia ondoa miamala niliyoingiza kwenye leja yangu kutoka benki hii",
+    "cancel": "Ghairi",
+    "disconnected": "Benki imetenganishwa na data yake imefutwa.",
+    "disconnectFailed": "Imeshindwa kutenganisha benki. Tafadhali jaribu tena."
   },
   "voice": {
     "start": "Ingizo la Sauti"

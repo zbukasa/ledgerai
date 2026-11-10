@@ -2,13 +2,13 @@
 export const LEGAL_CONFIG = {
     PRIVACY_POLICY_URL: "https://your-app-url.run.app/privacy",
     TERMS_URL: "https://your-app-url.run.app/terms",
-    LAST_UPDATED: "March 17, 2026",
+    LAST_UPDATED: "October 16, 2026",
 };
 
 export const PRIVACY_POLICY = `
 # Privacy Policy
 
-**Effective Date: March 18, 2026**
+**Effective Date: October 16, 2026**
 
 ## 1. Introduction
 This Privacy Policy describes how LedgerAI (the "Service") collects, use, and disclose your personal information when you use our services. We are committed to protecting your privacy and ensuring the security of your financial data. By using our service, you agree to the collection and use of information in accordance with this policy.
@@ -36,16 +36,18 @@ We use Plaid, Inc. ("Plaid") to connect your bank accounts. By using our service
 - **Security & Compliance:** To detect and prevent fraud, unauthorized access, and comply with legal obligations.
 
 ## 4. Data Security & Encryption
-We implement industry-leading security measures to protect your data:
-- **Encryption at Rest:** All sensitive data is stored on Google Cloud Platform (GCP) using AES-256 encryption.
-- **Encryption in Transit:** Data is transmitted using TLS 1.2 or higher to ensure secure communication between your device and our servers.
-- **Access Control:** We follow the Principle of Least Privilege (PoLP). Access to production data is strictly controlled via GCP Identity and Access Management (IAM).
-- **Audit Logs:** We maintain immutable audit logs of all data access and modifications.
+We protect your data with the following safeguards:
+- **Encryption in Transit:** All communication between the app, our servers and our service providers uses TLS 1.2 or higher.
+- **Encryption at Rest:** Our database, hosted by Supabase, is encrypted at rest with AES-256. Bank access tokens are additionally encrypted by our application before they are stored, and are never sent to your device.
+- **Account Security:** Passwords are stored only as salted bcrypt hashes, never in readable form. Login attempts are rate-limited to block password-guessing attacks.
+- **Data Isolation:** Every request for financial data is checked against the signed-in account, so each user can only access their own data.
+- **Access Control:** Access to production systems is limited to authorized personnel on a least-privilege basis and requires multi-factor authentication.
 
 ## 5. Data Sharing & Third Parties
 We do not sell your personal information. We share data only with:
 - **Plaid:** To facilitate bank connectivity.
-- **Google Cloud:** For hosting, database management, and AI processing.
+- **Supabase:** For database hosting.
+- **Google Cloud:** For application hosting and AI processing (Google Gemini).
 - **Ad Partners:** Since the Free Tier is ad-supported, we may share anonymized device identifiers with advertising partners (such as Google AdMob) to serve non-personalized advertisements to users on the Free Tier.
 - **Legal Authorities:** When required by law or to protect our legal rights, property, or safety.
 
@@ -54,9 +56,10 @@ We do not sell your personal information. We share data only with:
 You have the right to request a copy of the personal data we hold about you in a structured, machine-readable format.
 
 ### 6.2 Right to be Forgotten
-You have the right to request the deletion of your personal data at any time. 
-- **Account Termination:** Upon closing your account, all personal and financial data is purged from our active databases within 24 hours.
-- **Plaid Disconnection:** If you disconnect a specific bank account, all data associated with that connection is deleted from our systems immediately.
+You have the right to request the deletion of your personal data at any time.
+- **Account Deletion:** When you delete your account, your account details, ledger and bank data are permanently deleted from our production database immediately, and our access to your linked banks is revoked with Plaid. Residual copies in encrypted database backups expire automatically within 30 days.
+- **Bank Disconnection:** When you disconnect a bank, we revoke our access with Plaid and immediately delete the accounts, balances and transactions we retrieved from that institution. Transactions you previously imported into your ledger remain part of your records unless you choose to remove them when disconnecting, or delete them later.
+- **Requests by Email:** You can also request deletion, or a copy of your data, by emailing us at **tradelab.mantis@gmail.com**. We respond within 30 days.
 
 ### 6.3 GDPR & CCPA Compliance
 If you are a resident of the European Economic Area (EEA) or California, you have specific rights regarding your personal information, including the right to access, correct, or delete your data.
@@ -77,7 +80,7 @@ If you have any questions about this Privacy Policy or our data practices, pleas
 export const PRIVACY_POLICY_FR = `
 # Politique de Confidentialité
 
-**Date d'entrée en vigueur : 18 mars 2026**
+**Date d'entrée en vigueur : 16 octobre 2026**
 
 ## 1. Introduction
 Cette politique de confidentialité décrit comment LedgerAI (le « Service ») collecte, utilise et divulgue vos informations personnelles lorsque vous utilisez nos services. Nous nous engageons à protéger votre vie privée et à assurer la sécurité de vos données financières. En utilisant notre service, vous acceptez la collecte et l'utilisation des informations conformément à cette politique.
@@ -105,16 +108,18 @@ Nous utilisons Plaid, Inc. (« Plaid ») pour connecter vos comptes bancaires. E
 - **Sécurité et conformité :** Pour détecter et prévenir la fraude, les accès non autorisés et se conformer aux obligations légales.
 
 ## 4. Sécurité et cryptage des données
-Nous mettons en œuvre des mesures de sécurité de pointe pour protéger vos données :
-- **Cryptage au repos :** Toutes les données sensibles sont stockées sur Google Cloud Platform (GCP) à l'aide du cryptage AES-256.
-- **Cryptage en transit :** Les données sont transmises via TLS 1.2 ou supérieur pour garantir une communication sécurisée entre votre appareil et nos serveurs.
-- **Contrôle d'accès :** Nous suivons le principe du moindre privilège (PoLP). L'accès aux données de production est strictement contrôlé via GCP Identity and Access Management (IAM).
-- **Journaux d'audit :** Nous maintenons des journaux d'audit immuables de tous les accès et modifications de données.
+Nous protégeons vos données grâce aux mesures suivantes :
+- **Cryptage en transit :** Toutes les communications entre l'application, nos serveurs et nos prestataires de services utilisent TLS 1.2 ou supérieur.
+- **Cryptage au repos :** Notre base de données, hébergée par Supabase, est cryptée au repos avec AES-256. Les jetons d'accès bancaires sont en outre cryptés par notre application avant d'être stockés, et ne sont jamais envoyés à votre appareil.
+- **Sécurité du compte :** Les mots de passe sont stockés uniquement sous forme de hachages bcrypt salés, jamais sous forme lisible. Les tentatives de connexion sont limitées pour bloquer les attaques par devinette de mot de passe.
+- **Isolation des données :** Chaque demande de données financières est vérifiée par rapport au compte connecté, de sorte que chaque utilisateur ne peut accéder qu'à ses propres données.
+- **Contrôle d'accès :** L'accès aux systèmes de production est limité au personnel autorisé selon le principe du moindre privilège et nécessite une authentification multifacteur.
 
 ## 5. Partage de données et tiers
 Nous ne vendons pas vos informations personnelles. Nous partageons des données uniquement avec :
 - **Plaid :** Pour faciliter la connectivité bancaire.
-- **Google Cloud :** Pour l'hébergement, la gestion de base de données et le traitement de l'IA.
+- **Supabase :** Pour l'hébergement de la base de données.
+- **Google Cloud :** Pour l'hébergement de l'application et le traitement de l'IA (Google Gemini).
 - **Partenaires publicitaires :** Étant donné que le niveau gratuit est financé par la publicité, nous pouvons partager des identifiants d'appareil anonymisés avec des partenaires publicitaires (tels que Google AdMob) pour diffuser des publicités non personnalisées aux utilisateurs du niveau gratuit.
 - **Autorités légales :** Lorsque la loi l'exige ou pour protéger nos droits légaux, nos biens ou notre sécurité.
 
@@ -124,8 +129,9 @@ Vous avez le droit de demander une copie des données personnelles que nous dét
 
 ### 6.2 Droit à l'oubli
 Vous avez le droit de demander la suppression de vos données personnelles à tout moment.
-- **Résiliation du compte :** Lors de la fermeture de votre compte, toutes les données personnelles et financières sont purgées de nos bases de données actives dans les 24 heures.
-- **Déconnexion Plaid :** Si vous déconnectez un compte bancaire spécifique, toutes les données associées à cette connexion sont immédiatement supprimées de nos systèmes.
+- **Suppression du compte :** Lorsque vous supprimez votre compte, les détails de votre compte, votre registre et vos données bancaires sont immédiatement et définitivement supprimés de notre base de données de production, et notre accès à vos banques liées est révoqué auprès de Plaid. Les copies résiduelles dans les sauvegardes cryptées de la base de données expirent automatiquement dans un délai de 30 jours.
+- **Déconnexion bancaire :** Lorsque vous déconnectez une banque, nous révoquons notre accès auprès de Plaid et supprimons immédiatement les comptes, soldes et transactions que nous avons récupérés auprès de cette institution. Les transactions que vous avez précédemment importées dans votre registre restent dans vos dossiers, sauf si vous choisissez de les supprimer lors de la déconnexion ou de les supprimer plus tard.
+- **Demandes par e-mail :** Vous pouvez également demander la suppression ou une copie de vos données en nous écrivant à **tradelab.mantis@gmail.com**. Nous répondons dans un délai de 30 jours.
 
 ### 6.3 Conformité RGPD et CCPA
 Si vous résidez dans l'Espace économique européen (EEE) ou en Californie, vous disposez de droits spécifiques concernant vos informations personnelles, notamment le droit d'accéder à vos données, de les corriger ou de les supprimer.
@@ -146,7 +152,7 @@ Si vous avez des questions sur cette politique de confidentialité ou sur nos pr
 export const PRIVACY_POLICY_ES = `
 # Política de Privacidad
 
-**Fecha de entrada en vigor: 18 de marzo de 2026**
+**Fecha de entrada en vigor: 16 de octubre de 2026**
 
 ## 1. Introducción
 Esta Política de Privacidad describe cómo LedgerAI (el "Servicio") recopila, utiliza y divulga su información personal cuando utiliza nuestros servicios. Estamos comprometidos a proteger su privacidad y garantizar la seguridad de sus datos financieros. Al utilizar nuestro servicio, usted acepta la recopilación y el uso de información de acuerdo con esta política.
@@ -174,16 +180,18 @@ Utilizamos Plaid, Inc. ("Plaid") para conectar sus cuentas bancarias. Al utiliza
 - **Seguridad y cumplimiento:** Para detectar y prevenir fraudes, accesos no autorizados y cumplir con las obligaciones legales.
 
 ## 4. Seguridad y cifrado de datos
-Implementamos medidas de seguridad líderes en la industria para proteger sus datos:
-- **Cifrado en reposo:** Todos los datos confidenciales se almacenan en Google Cloud Platform (GCP) mediante cifrado AES-256.
-- **Cifrado en tránsito:** Los datos se transmiten mediante TLS 1.2 o superior para garantizar una comunicación segura entre su dispositivo y nuestros servidores.
-- **Control de acceso:** Seguimos el Principio de Menor Privilegio (PoLP). El acceso a los datos de producción está estrictamente controlado a través de Google Cloud Identity and Access Management (IAM).
-- **Registros de auditoría:** Mantenemos registros de auditoría inmutables de todo el acceso y las modificaciones de datos.
+Protegemos sus datos con las siguientes medidas:
+- **Cifrado en tránsito:** Toda la comunicación entre la aplicación, nuestros servidores y nuestros proveedores de servicios utiliza TLS 1.2 o superior.
+- **Cifrado en reposo:** Nuestra base de datos, alojada por Supabase, está cifrada en reposo con AES-256. Los tokens de acceso bancario se cifran además en nuestra aplicación antes de almacenarse y nunca se envían a su dispositivo.
+- **Seguridad de la cuenta:** Las contraseñas se almacenan únicamente como hashes bcrypt con sal, nunca en forma legible. Los intentos de inicio de sesión están limitados para bloquear ataques de adivinación de contraseñas.
+- **Aislamiento de datos:** Cada solicitud de datos financieros se verifica contra la cuenta que ha iniciado sesión, de modo que cada usuario solo puede acceder a sus propios datos.
+- **Control de acceso:** El acceso a los sistemas de producción está limitado al personal autorizado según el principio de menor privilegio y requiere autenticación multifactor.
 
 ## 5. Intercambio de datos y terceros
 No vendemos su información personal. Compartimos datos solo con:
 - **Plaid:** Para facilitar la conectividad bancaria.
-- **Google Cloud:** Para alojamiento, gestión de bases de datos y procesamiento de IA.
+- **Supabase:** Para el alojamiento de la base de datos.
+- **Google Cloud:** Para el alojamiento de la aplicación y el procesamiento de IA (Google Gemini).
 - **Socios publicitarios:** Dado que el Nivel Gratuito se financia con publicidad, podemos compartir identificadores de dispositivos anónimos con socios publicitarios (como Google AdMob) para mostrar anuncios no personalizados a los usuarios del Nivel Gratuito.
 - **Autoridades legales:** Cuando lo exija la ley o para proteger nuestros derechos legales, propiedad o seguridad.
 
@@ -193,8 +201,9 @@ Tiene derecho a solicitar una copia de los datos personales que tenemos sobre us
 
 ### 6.2 Derecho al olvido
 Tiene derecho a solicitar la eliminación de sus datos personales en cualquier momento.
-- **Terminación de la cuenta:** Al cerrar su cuenta, todos los datos personales y financieros se eliminan de nuestras bases de datos activas en un plazo de 24 horas.
-- **Desconexión de Plaid:** Si desconecta una cuenta bancaria específica, todos los datos asociados con esa conexión se eliminan de nuestros sistemas de inmediato.
+- **Eliminación de la cuenta:** Cuando elimina su cuenta, los detalles de su cuenta, su libro contable y sus datos bancarios se eliminan de forma inmediata y permanente de nuestra base de datos de producción, y nuestro acceso a sus bancos vinculados se revoca ante Plaid. Las copias residuales en las copias de seguridad cifradas de la base de datos caducan automáticamente en un plazo de 30 días.
+- **Desconexión bancaria:** Cuando desconecta un banco, revocamos nuestro acceso ante Plaid y eliminamos de inmediato las cuentas, saldos y transacciones que obtuvimos de esa institución. Las transacciones que importó previamente a su libro contable permanecen en sus registros, a menos que elija eliminarlas al desconectar o las elimine más tarde.
+- **Solicitudes por correo electrónico:** También puede solicitar la eliminación o una copia de sus datos escribiéndonos a **tradelab.mantis@gmail.com**. Respondemos en un plazo de 30 días.
 
 ### 6.3 Cumplimiento de GDPR y CCPA
 Si es residente del Espacio Económico Europeo (EEE) o de California, tiene derechos específicos con respecto a su información personal, incluido el derecho a acceder, corregir o eliminar sus datos.
@@ -215,7 +224,7 @@ Si tiene alguna pregunta sobre esta Política de Privacidad o nuestras práctica
 export const PRIVACY_POLICY_PT = `
 # Política de Privacidade
 
-**Data de vigência: 18 de março de 2026**
+**Data de vigência: 16 de outubro de 2026**
 
 ## 1. Introdução
 Esta Política de Privacidade descreve como o LedgerAI (o "Serviço") coleta, usa e divulga suas informações pessoais quando você usa nossos serviços. Estamos comprometidos em proteger sua privacidade e garantir a segurança de seus dados financeiros. Ao usar nosso serviço, você concorda com a coleta e o uso de informações de acordo com esta política.
@@ -243,16 +252,18 @@ Usamos a Plaid, Inc. ("Plaid") para conectar suas contas bancárias. Ao usar nos
 - **Segurança e Conformidade:** Para detectar e prevenir fraudes, acesso não autorizado e cumprir obrigações legais.
 
 ## 4. Segurança e Criptografia de Dados
-Implementamos medidas de segurança líderes do setor para proteger seus dados:
-- **Criptografia em Repouso:** Todos os dados confidenciais são armazenados no Google Cloud Platform (GCP) usando criptografia AES-256.
-- **Criptografia em Trânsito:** Os dados são transmitidos usando TLS 1.2 ou superior para garantir a comunicação segura entre seu dispositivo e nossos servidores.
-- **Controle de Acesso:** Seguimos o Princípio do Menor Privilégio (PoLP). O acesso aos dados de produção é estritamente controlado via Google Cloud Identity and Access Management (IAM).
-- **Logs de Auditoria:** Mantemos logs de auditoria imutáveis de todos os acessos e modificações de dados.
+Protegemos seus dados com as seguintes salvaguardas:
+- **Criptografia em Trânsito:** Toda a comunicação entre o aplicativo, nossos servidores e nossos provedores de serviços usa TLS 1.2 ou superior.
+- **Criptografia em Repouso:** Nosso banco de dados, hospedado pela Supabase, é criptografado em repouso com AES-256. Os tokens de acesso bancário são criptografados adicionalmente pelo nosso aplicativo antes de serem armazenados e nunca são enviados ao seu dispositivo.
+- **Segurança da Conta:** As senhas são armazenadas apenas como hashes bcrypt com salt, nunca em formato legível. As tentativas de login têm limite de taxa para bloquear ataques de adivinhação de senha.
+- **Isolamento de Dados:** Cada solicitação de dados financeiros é verificada em relação à conta conectada, de modo que cada usuário só pode acessar seus próprios dados.
+- **Controle de Acesso:** O acesso aos sistemas de produção é limitado a pessoal autorizado com base no princípio do menor privilégio e exige autenticação multifator.
 
 ## 5. Compartilhamento de Dados e Terceiros
 Não vendemos suas informações pessoais. Compartilhamos dados apenas com:
 - **Plaid:** Para facilitar a conectividade bancária.
-- **Google Cloud:** Para hospedagem, gerenciamento de banco de dados e processamento de IA.
+- **Supabase:** Para hospedagem do banco de dados.
+- **Google Cloud:** Para hospedagem do aplicativo e processamento de IA (Google Gemini).
 - **Parceiros de Publicidade:** Como o Nível Gratuito é suportado por anúncios, podemos compartilhar identificadores de dispositivos anônimos com parceiros de publicidade (como o Google AdMob) para exibir anúncios não personalizados para usuários no Nível Gratuito.
 - **Autoridades Legais:** Quando exigido por lei ou para proteger nossos direitos legais, propriedade ou segurança.
 
@@ -262,8 +273,9 @@ Você tem o direito de solicitar uma cópia dos dados pessoais que mantemos sobr
 
 ### 6.2 Direito ao Esquecimento
 Você tem o direito de solicitar a exclusão de seus dados pessoais a qualquer momento.
-- **Encerramento da Conta:** Ao fechar sua conta, todos os dados pessoais e financeiros são eliminados de nossos bancos de dados ativos em 24 horas.
-- **Desconexão da Plaid:** Se você desconectar uma conta bancária específica, todos os dados associados a essa conexão serão excluídos de nossos sistemas imediatamente.
+- **Exclusão da Conta:** Quando você exclui sua conta, os detalhes da sua conta, seu livro-razão e seus dados bancários são excluídos imediata e permanentemente do nosso banco de dados de produção, e nosso acesso aos seus bancos vinculados é revogado junto à Plaid. Cópias residuais em backups criptografados do banco de dados expiram automaticamente em até 30 dias.
+- **Desconexão Bancária:** Quando você desconecta um banco, revogamos nosso acesso junto à Plaid e excluímos imediatamente as contas, saldos e transações que obtivemos dessa instituição. As transações que você importou anteriormente para o seu livro-razão permanecem em seus registros, a menos que você opte por removê-las ao desconectar ou as exclua posteriormente.
+- **Solicitações por E-mail:** Você também pode solicitar a exclusão ou uma cópia dos seus dados enviando um e-mail para **tradelab.mantis@gmail.com**. Respondemos em até 30 dias.
 
 ### 6.3 Conformidade com GDPR e CCPA
 Se você for residente do Espaço Econômico Europeu (EEE) ou da Califórnia, terá direitos específicos em relação às suas informações pessoais, incluindo o direito de acessar, corrigir ou excluir seus dados.
@@ -290,7 +302,7 @@ export const TERMS_OF_SERVICE = `
 By accessing or using our application, you agree to be bound by these Terms of Service and our Privacy Policy. If you do not agree to these terms, you must not access or use the service.
 
 ## 2. Description of Service
-We provide an AI-powered expense tracking and financial management tool. The service includes bank connectivity, transaction categorization, and financial reporting. We reserve the right to modify or discontinue the service at any time. **The Service relies on third-party providers (Plaid, Google Cloud, Google Maps). LedgerAI is not liable for service interruptions, data inaccuracies, or downtime caused by these external providers.**
+We provide an AI-powered expense tracking and financial management tool. The service includes bank connectivity, transaction categorization, and financial reporting. We reserve the right to modify or discontinue the service at any time. **The Service relies on third-party providers (Plaid, Supabase, Google Cloud, Google Maps). LedgerAI is not liable for service interruptions, data inaccuracies, or downtime caused by these external providers.**
 
 ## 3. Financial Disclaimer
 **IMPORTANT: WE ARE NOT FINANCIAL ADVISORS.**
@@ -344,7 +356,7 @@ export const TERMS_OF_SERVICE_FR = `
 En accédant à notre application ou en l'utilisant, vous acceptez d'être lié par ces conditions d'utilisation et notre politique de confidentialité. Si vous n'acceptez pas ces conditions, vous ne devez pas accéder au service ni l'utiliser.
 
 ## 2. Description du service
-Nous fournissons un outil de suivi des dépenses et de gestion financière alimenté par l'IA. Le service comprend la connectivité bancaire, la catégorisation des transactions et les rapports financiers. Nous nous réservons le droit de modifier ou d'interrompre le service à tout moment. **Le Service s'appuie sur des prestataires tiers (Plaid, Google Cloud, Google Maps). LedgerAI n'est pas responsable des interruptions de service, des inexactitudes de données ou des temps d'arrêt causés par des prestataires externes.**
+Nous fournissons un outil de suivi des dépenses et de gestion financière alimenté par l'IA. Le service comprend la connectivité bancaire, la catégorisation des transactions et les rapports financiers. Nous nous réservons le droit de modifier ou d'interrompre le service à tout moment. **Le Service s'appuie sur des prestataires tiers (Plaid, Supabase, Google Cloud, Google Maps). LedgerAI n'est pas responsable des interruptions de service, des inexactitudes de données ou des temps d'arrêt causés par des prestataires externes.**
 
 ## 3. Avis de non-responsabilité financière
 **IMPORTANT : NOUS NE SOMMES PAS DES CONSEILLERS FINANCIERS.**
@@ -398,7 +410,7 @@ export const TERMS_OF_SERVICE_ES = `
 Al acceder o utilizar nuestra aplicación, usted acepta estar sujeto a estos Términos de Servicio y nuestra Política de Privacidad. Si no está de acuerdo con estos términos, no debe acceder ni utilizar el servicio.
 
 ## 2. Descripción del Servicio
-Proporcionamos una herramienta de gestión financiera y seguimiento de gastos impulsada por IA. El servicio incluye conectividad bancaria, categorización de transacciones e informes financieros. Nos reservamos el derecho de modificar o interrumpir el servicio en cualquier momento. **El Servicio depende de proveedores externos (Plaid, Google Cloud, Google Maps). LedgerAI no es responsable de las interrupciones del servicio, las inexactitudes de los datos o el tiempo de inactividad causado por estos proveedores externos.**
+Proporcionamos una herramienta de gestión financiera y seguimiento de gastos impulsada por IA. El servicio incluye conectividad bancaria, categorización de transacciones e informes financieros. Nos reservamos el derecho de modificar o interrumpir el servicio en cualquier momento. **El Servicio depende de proveedores externos (Plaid, Supabase, Google Cloud, Google Maps). LedgerAI no es responsable de las interrupciones del servicio, las inexactitudes de los datos o el tiempo de inactividad causado por estos proveedores externos.**
 
 ## 3. Descargo de responsabilidad financiera
 **IMPORTANTE: NO SOMOS ASESORES FINANCIEROS.**
@@ -452,7 +464,7 @@ export const TERMS_OF_SERVICE_PT = `
 Ao acessar ou usar nosso aplicativo, você concorda em cumprir estes Termos de Serviço e nossa Política de Privacidade. Se você não concordar com estes termos, não deverá acessar ou usar o serviço.
 
 ## 2. Descrição do Serviço
-Fornecemos uma ferramenta de gerenciamento financeiro e rastreamento de despesas com tecnologia de IA. O serviço inclui conectividade bancária, categorização de transações e relatórios financeiros. Reservamo-nos o direito de modificar ou descontinuar o serviço a qualquer momento. **O Serviço depende de provedores terceirizados (Plaid, Google Cloud, Google Maps). O LedgerAI não é responsável por interrupções de serviço, imprecisões de dados ou tempo de inatividade causado por esses provedores externos.**
+Fornecemos uma ferramenta de gerenciamento financeiro e rastreamento de despesas com tecnologia de IA. O serviço inclui conectividade bancária, categorização de transações e relatórios financeiros. Reservamo-nos o direito de modificar ou descontinuar o serviço a qualquer momento. **O Serviço depende de provedores terceirizados (Plaid, Supabase, Google Cloud, Google Maps). O LedgerAI não é responsável por interrupções de serviço, imprecisões de dados ou tempo de inatividade causado por esses provedores externos.**
 
 ## 3. Isenção de Responsabilidade Financeira
 **IMPORTANTE: NÃO SOMOS CONSULTORES FINANCEIROS.**
@@ -500,243 +512,143 @@ Para qualquer dúvida sobre estes Termos, entre em contato com **tradelab.mantis
 export const DATA_RETENTION_POLICY = `
 # Data Retention & Security Policy
 
+**Effective Date: October 16, 2026**
+
 ## 1. Overview
-This policy outlines our commitment to data minimization and secure retention practices, specifically designed to satisfy Plaid's Q11 security requirements and international data protection standards.
+This policy explains what data LedgerAI keeps, how long we keep it and how it is deleted. It applies to all personal and financial data we process, including data received through Plaid. We review this policy at least once a year and whenever our data practices change.
 
 ## 2. Retention Principles
-- **Purpose Limitation:** We only retain data that is necessary for the provision of our services. **We only request the specific scopes from Plaid (Transactions, Identity, Balance) necessary to provide the Ledger features.**
-- **Storage Limitation:** Data is deleted as soon as it is no longer required for its original purpose.
-- **Accuracy:** We take reasonable steps to ensure that the data we retain is accurate and up to date.
+- **Data Minimization:** We request only the Plaid products needed for LedgerAI's features (Transactions, Identity and Balance).
+- **Purpose Limitation:** Data is used only to provide the Service as described in our Privacy Policy.
+- **Storage Limitation:** We keep data only while your account is active, or for as long as the law requires.
 
 ## 3. Retention Periods
-- **Active User Data:** Retained for the duration of your active account.
-- **Transaction History:** Retained for up to 7 years for tax and compliance purposes, or until account deletion.
-- **Audit Logs:** Retained for 12 months to ensure security and accountability.
-- **Backup Data:** Encrypted backups are retained for 30 days before being permanently overwritten.
+- **Account and Ledger Data:** Kept while your account is active.
+- **Bank Data from Plaid** (accounts, balances, transactions and access tokens): Kept until you disconnect that bank or delete your account.
+- **Server Logs:** Kept for up to 30 days for security and troubleshooting.
+- **Database Backups:** Encrypted, and expire automatically within 30 days.
 
-## 4. Immediate Deletion (Plaid Q11 Compliance)
-We implement strict deletion protocols for financial data:
-- **Account Termination:** When a user terminates their account, all associated financial records, transaction history, and PII are permanently deleted from our production systems within 24 hours.
-- **Bank Unlinking:** If a user unlinks a specific financial institution, all data retrieved from that institution is immediately purged.
+## 4. Deletion
+- **Account Deletion:** You can delete your account from the app or by emailing **tradelab.mantis@gmail.com**. Your account, ledger and bank data are permanently deleted from our production database immediately, and our access to your linked banks is revoked with Plaid. Copies in encrypted backups expire within 30 days.
+- **Bank Disconnection:** Disconnecting a bank revokes our access with Plaid and immediately deletes the accounts, balances and transactions retrieved from it. You can choose to also remove the transactions you imported into your ledger from that bank.
+- **Data on Your Device:** LedgerAI keeps a working copy of your ledger on your device so it works offline. Uninstalling the app removes this copy.
 
 ## 5. Security Controls
-- **Infrastructure:** All data resides within Google Cloud Platform's secure environment.
-- **Encryption:** AES-256 encryption is applied to all data at rest.
-- **Vulnerability Management:** We perform automated container scanning and regular security audits.
-- **Audit & MFA:** We maintain immutable audit logs for all administrative access and critical system changes to ensure accountability. Multi-Factor Authentication (MFA) is enabled for all administrative access to the Google Cloud Console and is available to all end-users via Firebase Authentication.
-- **Network Security:** We use Virtual Private Clouds (VPC) and firewalls to isolate production environments.
+- **Encryption:** TLS 1.2 or higher in transit; AES-256 at rest in our database. Bank access tokens are additionally encrypted by our application.
+- **Access Control:** Least-privilege access to production systems, with multi-factor authentication required for all administrative access to our database, hosting and source code.
+- **Vulnerability Management:** Automated dependency and code scanning, with identified vulnerabilities fixed within defined timelines based on severity.
+- **Incident Response:** We maintain an incident response plan covering identification, containment, eradication and recovery. If a breach affects your data, we will notify you and the relevant authorities as required by applicable law.
 
 ## 6. Data Disposal
-When data reaches the end of its retention period, it is securely deleted using industry-standard methods that ensure the data cannot be recovered.
-
-## 7. Incident Response
-We maintain a robust Incident Response Plan (IRP) to address any potential security breaches, including identification, containment, eradication, and recovery phases. In the event of a data breach, we will notify affected users and relevant authorities in accordance with applicable laws.
+Deleted data is permanently removed from our production database, not just hidden or marked as deleted.
 `;
 
 export const DATA_RETENTION_POLICY_FR = `
 # Politique de conservation et de sécurité des données
 
+**Date d'entrée en vigueur : 16 octobre 2026**
+
 ## 1. Aperçu
-Cette politique souligne notre engagement envers la minimisation des données et les pratiques de conservation sécurisées, spécifiquement conçues pour satisfaire aux exigences de sécurité Q11 de Plaid et aux normes internationales de protection des données.
+Cette politique explique quelles données LedgerAI conserve, combien de temps nous les conservons et comment elles sont supprimées. Elle s'applique à toutes les données personnelles et financières que nous traitons, y compris les données reçues via Plaid. Nous révisons cette politique au moins une fois par an et chaque fois que nos pratiques en matière de données changent.
 
 ## 2. Principes de conservation
-- **Limitation des finalités :** Nous ne conservons que les données nécessaires à la fourniture de nos services. **Nous ne demandons que les portées spécifiques de Plaid (Transactions, Identité, Solde) nécessaires pour fournir les fonctionnalités de Ledger.**
-- **Limitation du stockage :** Les données sont supprimées dès qu'elles ne sont plus nécessaires à leur finalité initiale.
-- **Exactitude :** Nous prenons des mesures raisonnables pour nous assurer que les données que nous conservons sont exactes et à jour.
+- **Minimisation des données :** Nous ne demandons que les produits Plaid nécessaires aux fonctionnalités de LedgerAI (Transactions, Identité et Solde).
+- **Limitation des finalités :** Les données sont utilisées uniquement pour fournir le Service tel que décrit dans notre Politique de confidentialité.
+- **Limitation de la conservation :** Nous conservons les données uniquement tant que votre compte est actif, ou aussi longtemps que la loi l'exige.
 
 ## 3. Périodes de conservation
-- **Données d'utilisateur actif :** Conservées pendant la durée de votre compte actif.
-- **Historique des transactions :** Conservé jusqu'à 7 ans à des fins fiscales et de conformité, ou jusqu'à la suppression du compte.
-- **Journaux d'audit :** Conservés pendant 12 mois pour assurer la sécurité et la responsabilité.
-- **Données de sauvegarde :** Les sauvegardes cryptées sont conservées pendant 30 jours avant d'être définitivement écrasées.
+- **Données du compte et du registre :** Conservées tant que votre compte est actif.
+- **Données bancaires provenant de Plaid** (comptes, soldes, transactions et jetons d'accès) : Conservées jusqu'à ce que vous déconnectiez cette banque ou supprimiez votre compte.
+- **Journaux du serveur :** Conservés jusqu'à 30 jours à des fins de sécurité et de dépannage.
+- **Sauvegardes de la base de données :** Cryptées, elles expirent automatiquement dans un délai de 30 jours.
 
-## 4. Suppression immédiate (Conformité Plaid Q11)
-Nous mettons en œuvre des protocoles de suppression stricts pour les données financières :
-- **Résiliation du compte :** Lorsqu'un utilisateur résilie son compte, tous les dossiers financiers associés, l'historique des transactions et les PII sont définitivement supprimés de nos systèmes de production dans les 24 heures.
-- **Dissociation bancaire :** Si un utilisateur dissocie une institution financière spécifique, toutes les données récupérées auprès de cette institution sont immédiatement purgées.
+## 4. Suppression
+- **Suppression du compte :** Vous pouvez supprimer votre compte depuis l'application ou en écrivant à **tradelab.mantis@gmail.com**. Votre compte, votre registre et vos données bancaires sont immédiatement et définitivement supprimés de notre base de données de production, et notre accès à vos banques liées est révoqué auprès de Plaid. Les copies dans les sauvegardes cryptées expirent dans un délai de 30 jours.
+- **Déconnexion bancaire :** La déconnexion d'une banque révoque notre accès auprès de Plaid et supprime immédiatement les comptes, soldes et transactions récupérés auprès de celle-ci. Vous pouvez également choisir de supprimer les transactions que vous avez importées dans votre registre depuis cette banque.
+- **Données sur votre appareil :** LedgerAI conserve une copie de travail de votre registre sur votre appareil afin de fonctionner hors ligne. La désinstallation de l'application supprime cette copie.
 
 ## 5. Contrôles de sécurité
-- **Infrastructure :** Toutes les données résident dans l'environnement sécurisé de Google Cloud Platform.
-- **Cryptage :** Le cryptage AES-256 est appliqué à toutes les données au repos.
-- **Gestion des vulnérabilités :** Nous effectuons une analyse automatisée des conteneurs et des audits de sécurité réguliers.
-- **Audit et MFA :** Nous maintenons des journaux d'audit immuables pour tous les accès administratifs et les changements critiques du système afin d'assurer la responsabilité. L'authentification multifacteur (MFA) est activée pour tous les accès administratifs à la console Google Cloud et est disponible pour tous les utilisateurs finaux via Firebase Authentication.
-- **Sécurité du réseau :** Nous utilisons des clouds privés virtuels (VPC) et des pare-feu pour isoler les environnements de production.
+- **Cryptage :** TLS 1.2 ou supérieur en transit ; AES-256 au repos dans notre base de données. Les jetons d'accès bancaires sont en outre cryptés par notre application.
+- **Contrôle d'accès :** Accès aux systèmes de production selon le principe du moindre privilège, avec authentification multifacteur obligatoire pour tout accès administratif à notre base de données, à notre hébergement et à notre code source.
+- **Gestion des vulnérabilités :** Analyse automatisée des dépendances et du code, les vulnérabilités identifiées étant corrigées dans des délais définis selon leur gravité.
+- **Réponse aux incidents :** Nous maintenons un plan de réponse aux incidents couvrant l'identification, le confinement, l'éradication et la récupération. Si une violation affecte vos données, nous vous en informerons, ainsi que les autorités compétentes, conformément à la loi applicable.
 
 ## 6. Élimination des données
-Lorsque les données atteignent la fin de leur période de conservation, elles sont supprimées en toute sécurité à l'aide de méthodes standard de l'industrie qui garantissent que les données ne peuvent pas être récupérées.
-
-## 7. Réponse aux incidents
-Nous maintenons un plan de réponse aux incidents (IRP) robuste pour traiter toute violation potentielle de la sécurité, y compris les phases d'identification, de confinement, d'éradication et de récupération. En cas de violation de données, nous informerons les utilisateurs concernés et les autorités compétentes conformément aux lois applicables.
+Les données supprimées sont définitivement retirées de notre base de données de production, et non simplement masquées ou marquées comme supprimées.
 `;
 
 export const DATA_RETENTION_POLICY_ES = `
-# Política de Seguridad y Retención de Datos
+# Política de retención y seguridad de datos
 
-## 1. Descripción general
-Esta política describe nuestro compromiso con la minimización de datos y las prácticas de retención seguras, diseñadas específicamente para satisfacer los requisitos de seguridad Q11 de Plaid y los estándares internacionales de protección de datos.
+**Fecha de entrada en vigor: 16 de octubre de 2026**
+
+## 1. Resumen
+Esta política explica qué datos conserva LedgerAI, durante cuánto tiempo los conservamos y cómo se eliminan. Se aplica a todos los datos personales y financieros que procesamos, incluidos los datos recibidos a través de Plaid. Revisamos esta política al menos una vez al año y siempre que cambien nuestras prácticas de datos.
 
 ## 2. Principios de retención
-- **Limitación de la finalidad:** Solo retenemos los datos que son necesarios para la prestación de nuestros servicios. **Solo solicitamos los alcances específicos de Plaid (Transacciones, Identidad, Saldo) necesarios para proporcionar las funciones de Ledger.**
-- **Limitación de almacenamiento:** Los datos se eliminan tan pronto como ya no son necesarios para su propósito original.
-- **Exactitud:** Tomamos medidas razonables para garantizar que los datos que retenemos sean precisos y estén actualizados.
+- **Minimización de datos:** Solo solicitamos los productos de Plaid necesarios para las funciones de LedgerAI (Transacciones, Identidad y Saldo).
+- **Limitación de la finalidad:** Los datos se utilizan únicamente para prestar el Servicio tal como se describe en nuestra Política de Privacidad.
+- **Limitación del almacenamiento:** Conservamos los datos solo mientras su cuenta esté activa, o durante el tiempo que exija la ley.
 
 ## 3. Períodos de retención
-- **Datos de usuario activo:** Se conservan durante la duración de su cuenta activa.
-- **Historial de transacciones:** Se conserva hasta por 7 años para fines fiscales y de cumplimiento, o hasta la eliminación de la cuenta.
-- **Registros de auditoría:** Se conservan durante 12 meses para garantizar la seguridad y la rendición de cuentas.
-- **Datos de respaldo:** Los respaldos cifrados se conservan durante 30 días antes de ser sobrescritos permanentemente.
+- **Datos de la cuenta y del libro contable:** Se conservan mientras su cuenta esté activa.
+- **Datos bancarios de Plaid** (cuentas, saldos, transacciones y tokens de acceso): Se conservan hasta que desconecte ese banco o elimine su cuenta.
+- **Registros del servidor:** Se conservan hasta 30 días con fines de seguridad y resolución de problemas.
+- **Copias de seguridad de la base de datos:** Están cifradas y caducan automáticamente en un plazo de 30 días.
 
-## 4. Eliminación inmediata (Cumplimiento de Plaid Q11)
-Implementamos protocolos de eliminación estrictos para los datos financieros:
-- **Terminación de la cuenta:** Cuando un usuario termina su cuenta, todos los registros financieros asociados, el historial de transacciones y la PII se eliminan permanentemente de nuestros sistemas de producción en un plazo de 24 horas.
-- **Desvinculación bancaria:** Si un usuario desvincula una institución financiera específica, todos los datos recuperados de esa institución se eliminan de inmediato.
+## 4. Eliminación
+- **Eliminación de la cuenta:** Puede eliminar su cuenta desde la aplicación o escribiendo a **tradelab.mantis@gmail.com**. Su cuenta, su libro contable y sus datos bancarios se eliminan de forma inmediata y permanente de nuestra base de datos de producción, y nuestro acceso a sus bancos vinculados se revoca ante Plaid. Las copias en las copias de seguridad cifradas caducan en un plazo de 30 días.
+- **Desconexión bancaria:** Desconectar un banco revoca nuestro acceso ante Plaid y elimina de inmediato las cuentas, saldos y transacciones obtenidos de él. También puede optar por eliminar las transacciones que importó a su libro contable desde ese banco.
+- **Datos en su dispositivo:** LedgerAI guarda una copia de trabajo de su libro contable en su dispositivo para que funcione sin conexión. Desinstalar la aplicación elimina esta copia.
 
 ## 5. Controles de seguridad
-- **Infraestructura:** Todos los datos residen dentro del entorno seguro de Google Cloud Platform.
-- **Cifrado:** El cifrado AES-256 se aplica a todos los datos en reposo.
-- **Gestión de vulnerabilidades:** Realizamos escaneos de contenedores automatizados y auditorías de seguridad periódicas.
-- **Auditoría y MFA:** Mantenemos registros de auditoría inmutables para todo el acceso administrativo y los cambios críticos del sistema para garantizar la rendición de cuentas. La autenticación de múltiples factores (MFA) está habilitada para todo el acceso administrativo a la consola de Google Cloud y está disponible para todos los usuarios finales a través de Firebase Authentication.
-- **Seguridad de red:** Utilizamos nubes privadas virtuales (VPC) y firewalls para aislar los entornos de producción.
+- **Cifrado:** TLS 1.2 o superior en tránsito; AES-256 en reposo en nuestra base de datos. Los tokens de acceso bancario se cifran además en nuestra aplicación.
+- **Control de acceso:** Acceso a los sistemas de producción según el principio de menor privilegio, con autenticación multifactor obligatoria para todo acceso administrativo a nuestra base de datos, alojamiento y código fuente.
+- **Gestión de vulnerabilidades:** Análisis automatizado de dependencias y de código, y corrección de las vulnerabilidades identificadas dentro de plazos definidos según su gravedad.
+- **Respuesta a incidentes:** Mantenemos un plan de respuesta a incidentes que abarca la identificación, la contención, la erradicación y la recuperación. Si una violación afecta a sus datos, se lo notificaremos a usted y a las autoridades competentes según lo exija la ley aplicable.
 
-## 6. Eliminación de datos
-Cuando los datos llegan al final de su período de retención, se eliminan de forma segura utilizando métodos estándar de la industria que garantizan que los datos no se puedan recuperar.
-
-## 7. Respuesta a incidentes
-Mantenemos un robusto Plan de Respuesta a Incidentes (IRP) para abordar cualquier posible brecha de seguridad, incluidas las fases de identificación, contención, erradicación y recuperación. En caso de una violación de datos, notificaremos a los usuarios afectados y a las autoridades pertinentes de acuerdo con las leyes aplicables.
+## 6. Eliminación segura de datos
+Los datos eliminados se borran de forma permanente de nuestra base de datos de producción; no solo se ocultan ni se marcan como eliminados.
 `;
 
 export const DATA_RETENTION_POLICY_PT = `
 # Política de Retenção e Segurança de Dados
 
+**Data de vigência: 16 de outubro de 2026**
+
 ## 1. Visão Geral
-Esta política descreve nosso compromisso com a minimização de dados e práticas de retenção seguras, projetadas especificamente para satisfazer os requisitos de segurança Q11 da Plaid e os padrões internacionais de proteção de dados.
+Esta política explica quais dados o LedgerAI mantém, por quanto tempo os mantemos e como são excluídos. Ela se aplica a todos os dados pessoais e financeiros que processamos, incluindo os dados recebidos por meio da Plaid. Revisamos esta política pelo menos uma vez por ano e sempre que nossas práticas de dados mudarem.
 
 ## 2. Princípios de Retenção
-- **Limitação de Finalidade:** Retemos apenas os dados necessários para a prestação de nossos serviços. **Solicitamos apenas os escopos específicos da Plaid (Transações, Identidade, Saldo) necessários para fornecer os recursos do Ledger.**
-- **Limitação de Armazenamento:** Os dados são excluídos assim que não são mais necessários para sua finalidade original.
-- **Precisão:** Tomamos medidas razoáveis para garantir que os dados que retemos sejam precisos e atualizados.
+- **Minimização de Dados:** Solicitamos apenas os produtos da Plaid necessários para os recursos do LedgerAI (Transações, Identidade e Saldo).
+- **Limitação de Finalidade:** Os dados são usados apenas para fornecer o Serviço conforme descrito em nossa Política de Privacidade.
+- **Limitação de Armazenamento:** Mantemos os dados apenas enquanto sua conta estiver ativa, ou pelo tempo exigido por lei.
 
 ## 3. Períodos de Retenção
-- **Dados de Usuário Ativo:** Retidos pela duração de sua conta ativa.
-- **Histórico de Transações:** Retido por até 7 anos para fins fiscais e de conformidade, ou até a exclusão da conta.
-- **Logs de Auditoria:** Retidos por 12 meses para garantir segurança e responsabilidade.
-- **Dados de Backup:** Backups criptografados são retidos por 30 dias antes de serem substituídos permanentemente.
+- **Dados da Conta e do Livro-Razão:** Mantidos enquanto sua conta estiver ativa.
+- **Dados Bancários da Plaid** (contas, saldos, transações e tokens de acesso): Mantidos até que você desconecte esse banco ou exclua sua conta.
+- **Logs do Servidor:** Mantidos por até 30 dias para fins de segurança e solução de problemas.
+- **Backups do Banco de Dados:** Criptografados e expiram automaticamente em até 30 dias.
 
-## 4. Exclusão Imediata (Conformidade Plaid Q11)
-Implementamos protocolos de exclusão rigorosos para dados financeiros:
-- **Encerramento da Conta:** Quando um usuário encerra sua conta, todos os registros financeiros associados, histórico de transações e PII são excluídos permanentemente de nossos sistemas de produção em 24 horas.
-- **Desvinculação Bancária:** Se um usuário desvincular uma instituição financeira específica, todos os dados recuperados dessa instituição serão imediatamente eliminados.
+## 4. Exclusão
+- **Exclusão da Conta:** Você pode excluir sua conta pelo aplicativo ou enviando um e-mail para **tradelab.mantis@gmail.com**. Sua conta, seu livro-razão e seus dados bancários são excluídos imediata e permanentemente do nosso banco de dados de produção, e nosso acesso aos seus bancos vinculados é revogado junto à Plaid. As cópias em backups criptografados expiram em até 30 dias.
+- **Desconexão Bancária:** Desconectar um banco revoga nosso acesso junto à Plaid e exclui imediatamente as contas, saldos e transações obtidos dele. Você também pode optar por remover as transações que importou para o seu livro-razão a partir desse banco.
+- **Dados no Seu Dispositivo:** O LedgerAI mantém uma cópia de trabalho do seu livro-razão no seu dispositivo para funcionar offline. Desinstalar o aplicativo remove essa cópia.
 
 ## 5. Controles de Segurança
-- **Infraestrutura:** Todos os dados residem no ambiente seguro do Google Cloud Platform.
-- **Criptografia:** A criptografia AES-256 é aplicada a todos os dados em repouso.
-- **Gerenciamento de Vulnerabilidades:** Realizamos varredura automatizada de contêineres e auditorias de segurança regulares.
-- **Auditoria e MFA:** Mantemos logs de auditoria imutáveis para todos os acessos administrativos e alterações críticas do sistema para garantir a responsabilidade. A Autenticação de Múltiplos Fatores (MFA) está habilitada para todos os acessos administrativos ao Console do Google Cloud e está disponível para todos os usuários finais via Firebase Authentication.
-- **Segurança de Rede:** Usamos Virtual Private Clouds (VPC) e firewalls para isolar ambientes de produção.
+- **Criptografia:** TLS 1.2 ou superior em trânsito; AES-256 em repouso em nosso banco de dados. Os tokens de acesso bancário são criptografados adicionalmente pelo nosso aplicativo.
+- **Controle de Acesso:** Acesso aos sistemas de produção com base no menor privilégio, com autenticação multifator obrigatória para todo acesso administrativo ao nosso banco de dados, hospedagem e código-fonte.
+- **Gestão de Vulnerabilidades:** Varredura automatizada de dependências e de código, com as vulnerabilidades identificadas corrigidas dentro de prazos definidos conforme a gravidade.
+- **Resposta a Incidentes:** Mantemos um plano de resposta a incidentes que abrange identificação, contenção, erradicação e recuperação. Se uma violação afetar seus dados, notificaremos você e as autoridades competentes conforme exigido pela legislação aplicável.
 
-## 6. Eliminação de Dados
-Quando os dados atingem o fim de seu período de retenção, eles são excluídos com segurança usando métodos padrão da indústria que garantem que os dados não possam ser recuperados.
-
-## 7. Resposta a Incidentes
-Mantemos um Plano de Resposta a Incidentes (IRP) robusto para lidar com quaisquer possíveis violações de segurança, incluindo as fases de identificação, contenção, erradicação e recuperação. No caso de uma violação de dados, notificaremos os usuários afetados e as autoridades relevantes de acordo com as leis aplicáveis.
-`;
-
-export const SECURITY_POLICY_INTERNAL = `
-# Internal Information Security Policy (ISP)
-
-## 1. Access Control
-- **RBAC:** Access to production environments is restricted via Role-Based Access Control.
-- **Least Privilege:** Employees are granted the minimum level of access required for their job functions.
-- **GCP IAM:** All infrastructure access is managed through Google Cloud Identity and Access Management.
-
-## 2. Vulnerability Management
-- **Scanning:** Automated container scanning is enabled in GCP Artifact Registry.
-- **Patching:** Security patches are applied to all systems within 30 days of release, or immediately for critical vulnerabilities.
-
-## 3. Incident Response Plan
-1. **Identify:** Detect and qualify the security incident.
-2. **Contain:** Limit the scope and impact of the incident.
-3. **Eradicate:** Remove the root cause of the vulnerability.
-4. **Recover:** Restore systems to normal operation and perform a post-mortem.
-
-## 4. Multi-Factor Authentication (MFA)
-- **Developer Access:** System-level MFA is mandatory for all developers and administrators.
-- **User Access:** Consumer MFA is implemented via Firebase Authentication to protect user accounts.
-`;
-
-export const SECURITY_POLICY_INTERNAL_FR = `
-# Politique de sécurité de l'information interne (ISP)
-
-## 1. Contrôle d'accès
-- **RBAC :** L'accès aux environnements de production est restreint via le contrôle d'accès basé sur les rôles.
-- **Moindre privilège :** Les employés bénéficient du niveau d'accès minimal requis pour leurs fonctions.
-- **GCP IAM :** Tous les accès à l'infrastructure sont gérés via Google Cloud Identity and Access Management.
-
-## 2. Gestion des vulnérabilités
-- **Analyse :** L'analyse automatisée des conteneurs est activée dans GCP Artifact Registry.
-- **Correctifs :** Les correctifs de sécurité sont appliqués à tous les systèmes dans les 30 jours suivant leur publication, ou immédiatement pour les vulnérabilités critiques.
-
-## 3. Plan de réponse aux incidents
-1. **Identifier :** Détecter et qualifier l'incident de sécurité.
-2. **Contenir :** Limiter la portée et l'impact de l'incident.
-3. **Éradiquer :** Supprimer la cause profonde de la vulnérabilité.
-4. **Récupérer :** Restaurer les systèmes à un fonctionnement normal et effectuer un post-mortem.
-
-## 4. Authentification multifacteur (MFA)
-- **Accès développeur :** La MFA au niveau du système est obligatoire pour tous les développeurs et administrateurs.
-- **Accès utilisateur :** La MFA grand public est mise en œuvre via Firebase Authentication pour protéger les comptes d'utilisateurs.
-`;
-
-export const SECURITY_POLICY_INTERNAL_ES = `
-# Política de Seguridad de la Información Interna (ISP)
-
-## 1. Control de Acceso
-- **RBAC:** El acceso a los entornos de producción está restringido mediante el Control de Acceso Basado en Roles.
-- **Mínimo Privilegio:** A los empleados se les otorga el nivel mínimo de acceso requerido para sus funciones laborales.
-- **GCP IAM:** Todo el acceso a la infraestructura se gestiona a través de Google Cloud Identity and Access Management.
-
-## 2. Gestión de Vulnerabilidades
-- **Escaneo:** El escaneo automatizado de contenedores está habilitado en GCP Artifact Registry.
-- **Parches:** Los parches de seguridad se aplican a todos los sistemas dentro de los 30 días posteriores a su lanzamiento, o de inmediato para vulnerabilidades críticas.
-
-## 3. Plan de Respuesta a Incidentes
-1. **Identificar:** Detectar y calificar el incidente de seguridad.
-2. **Contener:** Limitar el alcance y el impacto del incidente.
-3. **Erradicar:** Eliminar la causa raíz de la vulnerabilidad.
-4. **Recuperar:** Restaurar los sistemas a su funcionamiento normal y realizar un post-mortem.
-
-## 4. Autenticación de Múltiples Factores (MFA)
-- **Acceso de Desarrollador:** El MFA a nivel de sistema es obligatorio para todos los desarrolladores y administradores.
-- **Acceso de Usuario:** El MFA para el consumidor se implementa a través de Firebase Authentication para proteger las cuentas de usuario.
-`;
-
-export const SECURITY_POLICY_INTERNAL_PT = `
-# Política de Segurança da Informação Interna (ISP)
-
-## 1. Controle de Acesso
-- **RBAC:** O acesso aos ambientes de produção é restrito via Controle de Acesso Baseado em Funções.
-- **Privilégio Mínimo:** Os funcionários recebem o nível mínimo de acesso necessário para suas funções de trabalho.
-- **GCP IAM:** Todo o acesso à infraestrutura é gerenciado por meio do Google Cloud Identity and Access Management.
-
-## 2. Gerenciamento de Vulnerabilidades
-- **Varredura:** A varredura automatizada de contêineres está habilitada no GCP Artifact Registry.
-- **Correções:** As correções de segurança são aplicadas a todos os sistemas em até 30 dias após o lançamento, ou imediatamente para vulnerabilidades críticas.
-
-## 3. Plano de Resposta a Incidentes
-1. **Identificar:** Detectar e qualificar o incidente de segurança.
-2. **Conter:** Limitar o escopo e o impacto do incidente.
-3. **Erradicar:** Remover a causa raiz da vulnerabilidade.
-4. **Recuperar:** Restaurar os sistemas à operação normal e realizar um post-mortem.
-
-## 4. Autenticação de Múltiplos Fatores (MFA)
-- **Acesso do Desenvolvedor:** O MFA no nível do sistema é obrigatório para todos os desenvolvedores e administradores.
-- **Acesso do Usuário:** O MFA do consumidor é implementado via Firebase Authentication para proteger as contas de usuário.
+## 6. Descarte de Dados
+Os dados excluídos são removidos permanentemente do nosso banco de dados de produção, e não apenas ocultados ou marcados como excluídos.
 `;
 
 export const PRIVACY_POLICY_HI = `
 # गोपनीयता नीति
 
-**प्रभावी तिथि: 18 मार्च, 2026**
+**प्रभावी तिथि: 16 अक्टूबर, 2026**
 
 ## 1. परिचय
 यह गोपनीयता नीति बताती है कि जब आप हमारी सेवाओं का उपयोग करते हैं तो LedgerAI ("सेवा") आपकी व्यक्तिगत जानकारी कैसे एकत्र, उपयोग और प्रकट करती है। हम आपकी गोपनीयता की रक्षा करने और आपके वित्तीय डेटा की सुरक्षा सुनिश्चित करने के लिए प्रतिबद्ध हैं। हमारी सेवा का उपयोग करके, आप इस नीति के अनुसार जानकारी के संग्रह और उपयोग के लिए सहमत होते हैं।
@@ -764,16 +676,18 @@ export const PRIVACY_POLICY_HI = `
 - **सुरक्षा और अनुपालन:** धोखाधड़ी, अनधिकृत पहुंच का पता लगाने और रोकने और कानूनी दायित्वों का पालन करने के लिए।
 
 ## 4. डेटा सुरक्षा और एन्क्रिप्शन
-हम आपके डेटा की सुरक्षा के लिए उद्योग-अग्रणी सुरक्षा उपाय लागू करते हैं:
-- **एन्क्रिप्शन एट रेस्ट:** सभी संवेदनशील डेटा को एईएस-256 एन्क्रिप्शन का उपयोग करके Google क्लाउड प्लेटफ़ॉर्म (GCP) पर संग्रहीत किया जाता है।
-- **एन्क्रिप्शन इन ट्रांजिट:** आपके डिवाइस और हमारे सर्वर के बीच सुरक्षित संचार सुनिश्चित करने के लिए डेटा को टीएलएस 1.2 या उच्चतर का उपयोग करके प्रसारित किया जाता है।
-- **पहुंच नियंत्रण:** हम न्यूनतम विशेषाधिकार के सिद्धांत (PoLP) का पालन करते हैं। उत्पादन डेटा तक पहुंच को GCP पहचान और पहुंच प्रबंधन (IAM) के माध्यम से कड़ाई से नियंत्रित किया जाता है।
-- **ऑडिट लॉग:** हम सभी डेटा पहुंच और संशोधनों के अपरिवर्तनीय ऑडिट लॉग बनाए रखते हैं।
+हम निम्नलिखित सुरक्षा उपायों से आपके डेटा की रक्षा करते हैं:
+- **एन्क्रिप्शन इन ट्रांजिट:** एप्लिकेशन, हमारे सर्वर और हमारे सेवा प्रदाताओं के बीच सभी संचार टीएलएस 1.2 या उच्चतर का उपयोग करते हैं।
+- **एन्क्रिप्शन एट रेस्ट:** Supabase द्वारा होस्ट किया गया हमारा डेटाबेस एईएस-256 के साथ एट रेस्ट एन्क्रिप्टेड है। बैंक एक्सेस टोकन को संग्रहीत करने से पहले हमारे एप्लिकेशन द्वारा अतिरिक्त रूप से एन्क्रिप्ट किया जाता है, और उन्हें कभी भी आपके डिवाइस पर नहीं भेजा जाता है।
+- **खाता सुरक्षा:** पासवर्ड केवल सॉल्टेड bcrypt हैश के रूप में संग्रहीत किए जाते हैं, कभी भी पढ़ने योग्य रूप में नहीं। पासवर्ड-अनुमान हमलों को रोकने के लिए लॉगिन प्रयासों की दर सीमित है।
+- **डेटा पृथक्करण:** वित्तीय डेटा के प्रत्येक अनुरोध की जाँच साइन-इन किए गए खाते के विरुद्ध की जाती है, ताकि प्रत्येक उपयोगकर्ता केवल अपने स्वयं के डेटा तक पहुँच सके।
+- **पहुंच नियंत्रण:** उत्पादन सिस्टम तक पहुंच न्यूनतम विशेषाधिकार के आधार पर केवल अधिकृत कर्मियों तक सीमित है और इसके लिए मल्टी-फैक्टर ऑथेंटिकेशन आवश्यक है।
 
 ## 5. डेटा साझाकरण और तृतीय पक्ष
 हम आपकी व्यक्तिगत जानकारी नहीं बेचते हैं। हम डेटा केवल इनके साथ साझा करते हैं:
 - **प्लैड:** बैंक कनेक्टिविटी की सुविधा के लिए।
-- **Google क्लाउड:** होस्टिंग, डेटाबेस प्रबंधन और AI प्रसंस्करण के लिए।
+- **Supabase:** डेटाबेस होस्टिंग के लिए।
+- **Google क्लाउड:** एप्लिकेशन होस्टिंग और AI प्रसंस्करण (Google Gemini) के लिए।
 - **विज्ञापन भागीदार:** चूंकि फ्री टियर विज्ञापन-समर्थित है, इसलिए हम फ्री टियर के उपयोगकर्ताओं को गैर-व्यक्तिगत विज्ञापन दिखाने के लिए विज्ञापन भागीदारों (जैसे Google AdMob) के साथ अज्ञात डिवाइस पहचानकर्ता साझा कर सकते हैं।
 - **कानूनी अधिकारी:** जब कानून द्वारा आवश्यक हो या हमारे कानूनी अधिकारों, संपत्ति या सुरक्षा की रक्षा के लिए।
 
@@ -783,8 +697,9 @@ export const PRIVACY_POLICY_HI = `
 
 ### 6.2 भूल जाने का अधिकार
 आपको किसी भी समय अपने व्यक्तिगत डेटा को हटाने का अनुरोध करने का अधिकार है।
-- **खाता समाप्ति:** अपना खाता बंद करने पर, सभी व्यक्तिगत और वित्तीय डेटा 24 घंटों के भीतर हमारे सक्रिय डेटाबेस से हटा दिए जाते हैं।
-- **प्लैड डिस्कनेक्शन:** यदि आप किसी विशिष्ट बैंक खाते को डिस्कनेक्ट करते हैं, तो उस कनेक्शन से जुड़ा सारा डेटा हमारे सिस्टम से तुरंत हटा दिया जाता है।
+- **खाता हटाना:** जब आप अपना खाता हटाते हैं, तो आपके खाते का विवरण, लेजर और बैंक डेटा हमारे उत्पादन डेटाबेस से तुरंत और स्थायी रूप से हटा दिया जाता है, और आपके लिंक किए गए बैंकों तक हमारी पहुंच प्लैड के साथ रद्द कर दी जाती है। एन्क्रिप्टेड डेटाबेस बैकअप में बची प्रतियां 30 दिनों के भीतर स्वचालित रूप से समाप्त हो जाती हैं।
+- **बैंक डिस्कनेक्शन:** जब आप किसी बैंक को डिस्कनेक्ट करते हैं, तो हम प्लैड के साथ अपनी पहुंच रद्द कर देते हैं और उस संस्थान से प्राप्त खातों, शेष राशियों और लेनदेन को तुरंत हटा देते हैं। आपके द्वारा पहले अपने लेजर में आयात किए गए लेनदेन आपके रिकॉर्ड में बने रहते हैं, जब तक कि आप डिस्कनेक्ट करते समय उन्हें हटाने का विकल्प न चुनें या बाद में उन्हें हटा न दें।
+- **ईमेल द्वारा अनुरोध:** आप **tradelab.mantis@gmail.com** पर ईमेल करके अपने डेटा को हटाने या उसकी प्रति का अनुरोध भी कर सकते हैं। हम 30 दिनों के भीतर जवाब देते हैं।
 
 ### 6.3 GDPR और CCPA अनुपालन
 यदि आप यूरोपीय आर्थिक क्षेत्र (EEA) या कैलिफ़ोर्निया के निवासी हैं, तो आपके पास अपनी व्यक्तिगत जानकारी के संबंध में विशिष्ट अधिकार हैं, जिसमें आपके डेटा तक पहुँचने, उसे सही करने या हटाने का अधिकार शामिल है।
@@ -805,7 +720,7 @@ export const PRIVACY_POLICY_HI = `
 export const PRIVACY_POLICY_AR = `
 # سياسة الخصوصية
 
-**تاريخ النفاذ: 18 مارس 2026**
+**تاريخ النفاذ: 16 أكتوبر 2026**
 
 ## 1. مقدمة
 تصف سياسة الخصوصية هذه كيف يقوم LedgerAI ("الخدمة") بجمع معلوماتك الشخصية واستخدامها والكشف عنها عند استخدام خدماتنا. نحن ملتزمون بحماية خصوصيتك وضمان أمن بياناتك المالية. باستخدام خدمتنا، فإنك توافق على جمع المعلومات واستخدامها وفقًا لهذه السياسة.
@@ -833,16 +748,18 @@ export const PRIVACY_POLICY_AR = `
 - **الأمن والامتثال:** للكشف عن الاحتيال والوصول غير المصرح به ومنعهما والامتثال للالتزامات القانونية.
 
 ## 4. أمن البيانات وتشفيرها
-نحن نطبق تدابير أمنية رائدة في الصناعة لحماية بياناتك:
-- **التشفير عند السكون:** يتم تخزين جميع البيانات الحساسة على منصة Google Cloud (GCP) باستخدام تشفير AES-256.
-- **التشفير أثناء النقل:** يتم نقل البيانات باستخدام TLS 1.2 أو أعلى لضمان الاتصال الآمن بين جهازك وخوادمنا.
-- **التحكم في الوصول:** نحن نتبع مبدأ الامتياز الأقل (PoLP). يتم التحكم في الوصول إلى بيانات الإنتاج بشكل صارم عبر إدارة الهوية والوصول (IAM) في GCP.
-- **سجلات التدقيق:** نحن نحتفظ بسجلات تدقيق غير قابلة للتغيير لجميع عمليات الوصول إلى البيانات وتعديلها.
+نحمي بياناتك من خلال الضمانات التالية:
+- **التشفير أثناء النقل:** تستخدم جميع الاتصالات بين التطبيق وخوادمنا ومزودي الخدمة لدينا بروتوكول TLS 1.2 أو أعلى.
+- **التشفير عند السكون:** قاعدة بياناتنا، المستضافة لدى Supabase، مشفرة عند السكون باستخدام AES-256. كما يتم تشفير رموز الوصول المصرفية بشكل إضافي بواسطة تطبيقنا قبل تخزينها، ولا يتم إرسالها أبدًا إلى جهازك.
+- **أمان الحساب:** يتم تخزين كلمات المرور فقط كتجزئات bcrypt مملحة، وليس بصيغة قابلة للقراءة أبدًا. ويتم تحديد معدل محاولات تسجيل الدخول لمنع هجمات تخمين كلمات المرور.
+- **عزل البيانات:** يتم التحقق من كل طلب للبيانات المالية مقابل الحساب المسجل دخوله، بحيث لا يتمكن كل مستخدم إلا من الوصول إلى بياناته الخاصة.
+- **التحكم في الوصول:** يقتصر الوصول إلى أنظمة الإنتاج على الموظفين المصرح لهم وفق مبدأ الامتياز الأقل، ويتطلب المصادقة متعددة العوامل.
 
 ## 5. مشاركة البيانات والأطراف الثالثة
 نحن لا نبيع معلوماتك الشخصية. نحن نشارك البيانات فقط مع:
 - **Plaid:** لتسهيل الاتصال المصرفي.
-- **Google Cloud:** للاستضافة وإدارة قواعد البيانات ومعالجة الذكاء الاصطناعي.
+- **Supabase:** لاستضافة قاعدة البيانات.
+- **Google Cloud:** لاستضافة التطبيق ومعالجة الذكاء الاصطناعي (Google Gemini).
 - **شركاء الإعلان:** نظرًا لأن المستوى المجاني مدعوم بالإعلانات، فقد نشارك معرفات الأجهزة المجهولة مع شركاء الإعلان (مثل Google AdMob) لتقديم إعلانات غير مخصصة للمستخدمين في المستوى المجاني.
 - **السلطات القانونية:** عندما يقتضي القانون ذلك أو لحماية حقوقنا القانونية أو ممتلكاتنا أو سلامتنا.
 
@@ -851,9 +768,10 @@ export const PRIVACY_POLICY_AR = `
 لديك الحق في طلب نسخة من البيانات الشخصية التي نحتفظ بها عنك في شكل منظم وقابل للقراءة آليًا.
 
 ### 6.2 الحق في النسيان
-لديك الحق في طلب حذف بياناتك الشخصية في أي وقت.
-- **إنهاء الحساب:** عند إغلاق حسابك، يتم حذف جميع البيانات الشخصية والمالية من قواعد بياناتنا النشطة في غضون 24 ساعة.
-- **فصل Plaid:** إذا قمت بفصل حساب مصرفي معين، فسيتم حذف جميع البيانات المرتبطة بهذا الاتصال من أنظمتنا على الفور.
+يحق لك طلب حذف بياناتك الشخصية في أي وقت.
+- **حذف الحساب:** عند حذف حسابك، يتم حذف تفاصيل حسابك ودفتر الأستاذ والبيانات المصرفية نهائيًا وفورًا من قاعدة بيانات الإنتاج لدينا، ويتم إلغاء وصولنا إلى بنوكك المرتبطة لدى Plaid. وتنتهي صلاحية النسخ المتبقية في النسخ الاحتياطية المشفرة لقاعدة البيانات تلقائيًا في غضون 30 يومًا.
+- **فصل البنك:** عند فصل أحد البنوك، نلغي وصولنا لدى Plaid ونحذف فورًا الحسابات والأرصدة والمعاملات التي استرجعناها من تلك المؤسسة. أما المعاملات التي استوردتها سابقًا إلى دفتر الأستاذ الخاص بك فتبقى ضمن سجلاتك، ما لم تختر إزالتها عند الفصل أو تحذفها لاحقًا.
+- **الطلبات عبر البريد الإلكتروني:** يمكنك أيضًا طلب حذف بياناتك أو الحصول على نسخة منها عبر مراسلتنا على **tradelab.mantis@gmail.com**. ونرد في غضون 30 يومًا.
 
 ### 6.3 الامتثال لـ GDPR و CCPA
 إذا كنت مقيمًا في المنطقة الاقتصادية الأوروبية (EEA) أو كاليفورنيا، فلديك حقوق محددة فيما يتعلق بمعلوماتك الشخصية، بما في ذلك الحق في الوصول إلى بياناتك أو تصحيحها أو حذفها.
@@ -880,7 +798,7 @@ export const TERMS_OF_SERVICE_HI = `
 हमारे एप्लिकेशन तक पहुँचने या उपयोग करने से, आप इन सेवा की शर्तों और हमारी गोपनीयता नीति से बाध्य होने के लिए सहमत होते हैं। यदि आप इन शर्तों से सहमत नहीं हैं, तो आपको सेवा तक पहुँचने या उपयोग करने की आवश्यकता नहीं है।
 
 ## 2. सेवा का विवरण
-हम AI-संचालित व्यय ट्रैकिंग और वित्तीय प्रबंधन उपकरण प्रदान करते हैं। सेवा में बैंक कनेक्टिविटी, लेनदेन वर्गीकरण और वित्तीय रिपोर्टिंग शामिल है। हम किसी भी समय सेवा को संशोधित करने या बंद करने का अधिकार सुरक्षित रखते हैं। **सेवा तृतीय-पक्ष प्रदाताओं (प्लैड, Google क्लाउड, Google मैप्स) पर निर्भर करती है। LedgerAI इन बाहरी प्रदाताओं के कारण होने वाली सेवा रुकावटों, डेटा अशुद्धियों या डाउनटाइम के लिए उत्तरदायी नहीं है।**
+हम AI-संचालित व्यय ट्रैकिंग और वित्तीय प्रबंधन उपकरण प्रदान करते हैं। सेवा में बैंक कनेक्टिविटी, लेनदेन वर्गीकरण और वित्तीय रिपोर्टिंग शामिल है। हम किसी भी समय सेवा को संशोधित करने या बंद करने का अधिकार सुरक्षित रखते हैं। **सेवा तृतीय-पक्ष प्रदाताओं (प्लैड, Supabase, Google क्लाउड, Google मैप्स) पर निर्भर करती है। LedgerAI इन बाहरी प्रदाताओं के कारण होने वाली सेवा रुकावटों, डेटा अशुद्धियों या डाउनटाइम के लिए उत्तरदायी नहीं है।**
 
 ## 3. वित्तीय अस्वीकरण
 **महत्वपूर्ण: हम वित्तीय सलाहकार नहीं हैं।**
@@ -934,7 +852,7 @@ export const TERMS_OF_SERVICE_AR = `
 من خلال الوصول إلى تطبيقنا أو استخدامه، فإنك توافق على الالتزام بشروط الخدمة هذه وسياسة الخصوصية الخاصة بنا. إذا كنت لا توافق على هذه الشروط، فيجب عليك عدم الوصول إلى الخدمة أو استخدامها.
 
 ## 2. وصف الخدمة
-نحن نقدم أداة لتتبع النفقات والإدارة المالية مدعومة بالذكاء الاصطناعي. تشمل الخدمة الاتصال المصرفي وتصنيف المعاملات والتقارير المالية. نحن نحتفظ بالحق في تعديل الخدمة أو إيقافها في أي وقت. **تعتمد الخدمة على مزودي طرف ثالث (Plaid و Google Cloud و Google Maps). LedgerAI ليس مسؤولاً عن انقطاع الخدمة أو عدم دقة البيانات أو التوقف الناتج عن هؤلاء المزودين الخارجيين.**
+نحن نقدم أداة لتتبع النفقات والإدارة المالية مدعومة بالذكاء الاصطناعي. تشمل الخدمة الاتصال المصرفي وتصنيف المعاملات والتقارير المالية. نحن نحتفظ بالحق في تعديل الخدمة أو إيقافها في أي وقت. **تعتمد الخدمة على مزودي طرف ثالث (Plaid و Supabase و Google Cloud و Google Maps). LedgerAI ليس مسؤولاً عن انقطاع الخدمة أو عدم دقة البيانات أو التوقف الناتج عن هؤلاء المزودين الخارجيين.**
 
 ## 3. إخلاء المسؤولية المالية
 **هام: نحن لسنا مستشارين ماليين.**
@@ -982,71 +900,67 @@ export const TERMS_OF_SERVICE_AR = `
 export const DATA_RETENTION_POLICY_HI = `
 # डेटा प्रतिधारण और सुरक्षा नीति
 
+**प्रभावी तिथि: 16 अक्टूबर, 2026**
+
 ## 1. अवलोकन
-यह नीति डेटा न्यूनीकरण और सुरक्षित प्रतिधारण प्रथाओं के प्रति हमारी प्रतिबद्धता को रेखांकित करती है, जिसे विशेष रूप से प्लैड की Q11 सुरक्षा आवश्यकताओं और अंतरराष्ट्रीय डेटा सुरक्षा मानकों को पूरा करने के लिए डिज़ाइन किया गया है।
+यह नीति बताती है कि LedgerAI कौन-सा डेटा रखता है, हम उसे कितने समय तक रखते हैं और उसे कैसे हटाया जाता है। यह हमारे द्वारा संसाधित सभी व्यक्तिगत और वित्तीय डेटा पर लागू होती है, जिसमें प्लैड के माध्यम से प्राप्त डेटा भी शामिल है। हम इस नीति की वर्ष में कम से कम एक बार और जब भी हमारी डेटा प्रथाएं बदलती हैं, समीक्षा करते हैं।
 
 ## 2. प्रतिधारण सिद्धांत
-- **उद्देश्य सीमा:** हम केवल वही डेटा रखते हैं जो हमारी सेवाओं के प्रावधान के लिए आवश्यक है। **हम Ledger सुविधाएँ प्रदान करने के लिए आवश्यक प्लैड (लेनदेन, पहचान, शेष) से केवल विशिष्ट स्कोप का अनुरोध करते हैं।**
-- **भंडारण सीमा:** डेटा को हटा दिया जाता है जैसे ही इसकी मूल उद्देश्य के लिए आवश्यकता नहीं रह जाती है।
-- **सटीकता:** हम यह सुनिश्चित करने के लिए उचित कदम उठाते हैं कि हमारे द्वारा रखा गया डेटा सटीक और अद्यतित है।
+- **डेटा न्यूनीकरण:** हम केवल वही प्लैड उत्पाद मांगते हैं जो LedgerAI की सुविधाओं के लिए आवश्यक हैं (लेनदेन, पहचान और शेष राशि)।
+- **उद्देश्य सीमा:** डेटा का उपयोग केवल हमारी गोपनीयता नीति में वर्णित सेवा प्रदान करने के लिए किया जाता है।
+- **भंडारण सीमा:** हम डेटा केवल तब तक रखते हैं जब तक आपका खाता सक्रिय है, या जब तक कानून द्वारा आवश्यक हो।
 
 ## 3. प्रतिधारण अवधि
-- **सक्रिय उपयोगकर्ता डेटा:** आपके सक्रिय खाते की अवधि के लिए रखा गया।
-- **लेनदेन इतिहास:** कर और अनुपालन उद्देश्यों के लिए, या खाता हटाने तक 7 साल तक रखा गया।
-- **ऑडिट लॉग:** सुरक्षा और जवाबदेही सुनिश्चित करने के लिए 12 महीने तक रखा गया।
-- **बैकअप डेटा:** एन्क्रिप्टेड बैकअप को स्थायी रूप से अधिलेखित होने से पहले 30 दिनों के लिए रखा जाता है।
+- **खाता और लेजर डेटा:** जब तक आपका खाता सक्रिय है, तब तक रखा जाता है।
+- **प्लैड से प्राप्त बैंक डेटा** (खाते, शेष राशियां, लेनदेन और एक्सेस टोकन): जब तक आप उस बैंक को डिस्कनेक्ट नहीं करते या अपना खाता नहीं हटाते, तब तक रखा जाता है।
+- **सर्वर लॉग:** सुरक्षा और समस्या निवारण के लिए 30 दिनों तक रखे जाते हैं।
+- **डेटाबेस बैकअप:** एन्क्रिप्टेड होते हैं, और 30 दिनों के भीतर स्वचालित रूप से समाप्त हो जाते हैं।
 
-## 4. तत्काल विलोपन (प्लैड Q11 अनुपालन)
-हम वित्तीय डेटा के लिए सख्त विलोपन प्रोटोकॉल लागू करते हैं:
-- **खाता समाप्ति:** जब कोई उपयोगकर्ता अपना खाता समाप्त करता है, तो सभी संबंधित वित्तीय रिकॉर्ड, लेनदेन इतिहास और PII को 24 घंटों के भीतर हमारे उत्पादन सिस्टम से स्थायी रूप से हटा दिया जाता है।
-- **बैंक अनलिंकिंग:** यदि कोई उपयोगकर्ता किसी विशिष्ट वित्तीय संस्थान को अनलिंक करता है, तो उस संस्थान से प्राप्त सभी डेटा तुरंत हटा दिया जाता है।
+## 4. विलोपन
+- **खाता हटाना:** आप ऐप से या **tradelab.mantis@gmail.com** पर ईमेल करके अपना खाता हटा सकते हैं। आपका खाता, लेजर और बैंक डेटा हमारे उत्पादन डेटाबेस से तुरंत और स्थायी रूप से हटा दिया जाता है, और आपके लिंक किए गए बैंकों तक हमारी पहुंच प्लैड के साथ रद्द कर दी जाती है। एन्क्रिप्टेड बैकअप में मौजूद प्रतियां 30 दिनों के भीतर समाप्त हो जाती हैं।
+- **बैंक डिस्कनेक्शन:** किसी बैंक को डिस्कनेक्ट करने से प्लैड के साथ हमारी पहुंच रद्द हो जाती है और उससे प्राप्त खाते, शेष राशियां और लेनदेन तुरंत हटा दिए जाते हैं। आप उस बैंक से अपने लेजर में आयात किए गए लेनदेन को भी हटाने का विकल्प चुन सकते हैं।
+- **आपके डिवाइस पर डेटा:** LedgerAI ऑफ़लाइन काम करने के लिए आपके डिवाइस पर आपके लेजर की एक कार्यशील प्रति रखता है। ऐप को अनइंस्टॉल करने से यह प्रति हट जाती है।
 
 ## 5. सुरक्षा नियंत्रण
-- **बुनियादी ढांचा:** सारा डेटा Google क्लाउड प्लेटफ़ॉर्म के सुरक्षित वातावरण में रहता है।
-- **एन्क्रिप्शन:** एईएस-256 एन्क्रिप्शन सभी डेटा एट रेस्ट पर लागू होता है।
-- **भेद्यता प्रबंधन:** हम स्वचालित कंटेनर स्कैनिंग और नियमित सुरक्षा ऑडिट करते हैं।
-- **ऑडिट और MFA:** हम जवाबदेही सुनिश्चित करने के लिए सभी प्रशासनिक पहुंच और महत्वपूर्ण सिस्टम परिवर्तनों के लिए अपरिवर्तनीय ऑडिट लॉग बनाए रखते हैं। Google क्लाउड कंसोल तक सभी प्रशासनिक पहुंच के लिए मल्टी-फैक्टर ऑथेंटिकेशन (MFA) सक्षम है और फायरबेस ऑथेंटिकेशन के माध्यम से सभी अंतिम उपयोगकर्ताओं के लिए उपलब्ध है।
-- **नेटवर्क सुरक्षा:** हम उत्पादन वातावरण को अलग करने के लिए वर्चुअल प्राइवेट क्लाउड (VPC) और फायरवॉल का उपयोग करते हैं।
+- **एन्क्रिप्शन:** ट्रांजिट में टीएलएस 1.2 या उच्चतर; हमारे डेटाबेस में एट रेस्ट एईएस-256। बैंक एक्सेस टोकन हमारे एप्लिकेशन द्वारा अतिरिक्त रूप से एन्क्रिप्ट किए जाते हैं।
+- **पहुंच नियंत्रण:** उत्पादन सिस्टम तक न्यूनतम विशेषाधिकार के आधार पर पहुंच, और हमारे डेटाबेस, होस्टिंग और सोर्स कोड तक सभी प्रशासनिक पहुंच के लिए मल्टी-फैक्टर ऑथेंटिकेशन अनिवार्य।
+- **भेद्यता प्रबंधन:** स्वचालित निर्भरता और कोड स्कैनिंग, और पहचानी गई कमजोरियों को गंभीरता के आधार पर निर्धारित समय-सीमा के भीतर ठीक किया जाता है।
+- **घटना प्रतिक्रिया:** हम एक घटना प्रतिक्रिया योजना बनाए रखते हैं जिसमें पहचान, रोकथाम, उन्मूलन और पुनर्प्राप्ति शामिल हैं। यदि किसी उल्लंघन से आपका डेटा प्रभावित होता है, तो हम लागू कानून के अनुसार आपको और संबंधित अधिकारियों को सूचित करेंगे।
 
 ## 6. डेटा निपटान
-जब डेटा अपनी प्रतिधारण अवधि के अंत तक पहुँच जाता है, तो इसे उद्योग-मानक विधियों का उपयोग करके सुरक्षित रूप से हटा दिया जाता है जो यह सुनिश्चित करते हैं कि डेटा को पुनर्प्राप्त नहीं किया जा सकता है।
-
-## 7. घटना प्रतिक्रिया
-हम किसी भी संभावित सुरक्षा उल्लंघन को संबोधित करने के लिए एक मजबूत घटना प्रतिक्रिया योजना (IRP) बनाए रखते हैं, जिसमें पहचान, रोकथाम, उन्मूलन और पुनर्प्राप्ति चरण शामिल हैं। डेटा उल्लंघन की स्थिति में, हम लागू कानूनों के अनुसार प्रभावित उपयोगकर्ताओं और संबंधित अधिकारियों को सूचित करेंगे।
+हटाया गया डेटा हमारे उत्पादन डेटाबेस से स्थायी रूप से हटा दिया जाता है, न कि केवल छिपाया या हटाए गए के रूप में चिह्नित किया जाता है।
 `;
 
 export const DATA_RETENTION_POLICY_AR = `
 # سياسة الاحتفاظ بالبيانات وأمنها
 
+**تاريخ النفاذ: 16 أكتوبر 2026**
+
 ## 1. نظرة عامة
-تحدد هذه السياسة التزامنا بتقليل البيانات وممارسات الاحتفاظ الآمنة، المصممة خصيصًا لتلبية متطلبات أمان Q11 من Plaid ومعايير حماية البيانات الدولية.
+توضح هذه السياسة البيانات التي يحتفظ بها LedgerAI، ومدة احتفاظنا بها، وكيفية حذفها. وتنطبق على جميع البيانات الشخصية والمالية التي نعالجها، بما في ذلك البيانات المستلمة عبر Plaid. نراجع هذه السياسة مرة واحدة على الأقل سنويًا وكلما تغيرت ممارساتنا المتعلقة بالبيانات.
 
 ## 2. مبادئ الاحتفاظ
-- **تحديد الغرض:** نحن نحتفظ فقط بالبيانات الضرورية لتقديم خدماتنا. **نحن نطلب فقط النطاقات المحددة من Plaid (المعاملات، الهوية، الرصيد) اللازمة لتوفير ميزات Ledger.**
-- **تحديد التخزين:** يتم حذف البيانات بمجرد عدم الحاجة إليها لغرضها الأصلي.
-- **الدقة:** نتخذ خطوات معقولة لضمان دقة البيانات التي نحتفظ بها وتحديثها.
+- **تقليل البيانات:** لا نطلب سوى منتجات Plaid اللازمة لميزات LedgerAI (المعاملات والهوية والرصيد).
+- **تحديد الغرض:** تُستخدم البيانات فقط لتقديم الخدمة كما هو موضح في سياسة الخصوصية الخاصة بنا.
+- **تحديد مدة التخزين:** نحتفظ بالبيانات فقط طالما كان حسابك نشطًا، أو للمدة التي يقتضيها القانون.
 
 ## 3. فترات الاحتفاظ
-- **بيانات المستخدم النشط:** يتم الاحتفاظ بها طوال مدة حسابك النشط.
-- **سجل المعاملات:** يتم الاحتفاظ به لمدة تصل إلى 7 سنوات لأغراض الضريبة والامتثال، أو حتى حذف الحساب.
-- **سجلات التدقيق:** يتم الاحتفاظ بها لمدة 12 شهرًا لضمان الأمن والمساءلة.
-- **بيانات النسخ الاحتياطي:** يتم الاحتفاظ بالنسخ الاحتياطية المشفرة لمدة 30 يومًا قبل الكتابة فوقها بشكل دائم.
+- **بيانات الحساب ودفتر الأستاذ:** يُحتفظ بها طالما كان حسابك نشطًا.
+- **البيانات المصرفية من Plaid** (الحسابات والأرصدة والمعاملات ورموز الوصول): يُحتفظ بها حتى تفصل ذلك البنك أو تحذف حسابك.
+- **سجلات الخادم:** يُحتفظ بها لمدة تصل إلى 30 يومًا لأغراض الأمن واستكشاف الأخطاء وإصلاحها.
+- **النسخ الاحتياطية لقاعدة البيانات:** مشفرة، وتنتهي صلاحيتها تلقائيًا في غضون 30 يومًا.
 
-## 4. الحذف الفوري (الامتثال لـ Plaid Q11)
-نحن نطبق بروتوكولات حذف صارمة للبيانات المالية:
-- **إنهاء الحساب:** عندما ينهي المستخدم حسابه، يتم حذف جميع السجلات المالية المرتبطة وسجل المعاملات ومعلومات التعريف الشخصية (PII) نهائيًا من أنظمة الإنتاج لدينا في غضون 24 ساعة.
-- **إلغاء ربط البنك:** إذا قام المستخدم بإلغاء ربط مؤسسة مالية معينة، فسيتم حذف جميع البيانات المستردة من تلك المؤسسة على الفور.
+## 4. الحذف
+- **حذف الحساب:** يمكنك حذف حسابك من التطبيق أو بمراسلتنا على **tradelab.mantis@gmail.com**. يتم حذف حسابك ودفتر الأستاذ والبيانات المصرفية نهائيًا وفورًا من قاعدة بيانات الإنتاج لدينا، ويتم إلغاء وصولنا إلى بنوكك المرتبطة لدى Plaid. وتنتهي صلاحية النسخ الموجودة في النسخ الاحتياطية المشفرة في غضون 30 يومًا.
+- **فصل البنك:** يؤدي فصل أحد البنوك إلى إلغاء وصولنا لدى Plaid وحذف الحسابات والأرصدة والمعاملات المسترجعة منه فورًا. ويمكنك أيضًا اختيار إزالة المعاملات التي استوردتها إلى دفتر الأستاذ من ذلك البنك.
+- **البيانات على جهازك:** يحتفظ LedgerAI بنسخة عمل من دفتر الأستاذ الخاص بك على جهازك حتى يعمل دون اتصال بالإنترنت. وتؤدي إزالة تثبيت التطبيق إلى حذف هذه النسخة.
 
 ## 5. الضوابط الأمنية
-- **البنية التحتية:** تقع جميع البيانات داخل بيئة Google Cloud Platform الآمنة.
-- **التشفير:** يتم تطبيق تشفير AES-256 على جميع البيانات عند السكون.
-- **إدارة الثغرات الأمنية:** نقوم بإجراء فحص آلي للحاويات وعمليات تدقيق أمنية منتظمة.
-- **التدقيق و MFA:** نحن نحتفظ بسجلات تدقيق غير قابلة للتغيير لجميع عمليات الوصول الإداري وتغييرات النظام الحرجة لضمان المساءلة. تم تمكين المصادقة متعددة العوامل (MFA) لجميع عمليات الوصول الإداري إلى Google Cloud Console وهي متاحة لجميع المستخدمين النهائيين عبر Firebase Authentication.
-- **أمن الشبكة:** نستخدم السحب الخاصة الافتراضية (VPC) وجدران الحماية لعزل بيئات الإنتاج.
+- **التشفير:** TLS 1.2 أو أعلى أثناء النقل؛ وAES-256 عند السكون في قاعدة بياناتنا. كما يتم تشفير رموز الوصول المصرفية بشكل إضافي بواسطة تطبيقنا.
+- **التحكم في الوصول:** وصول إلى أنظمة الإنتاج وفق مبدأ الامتياز الأقل، مع اشتراط المصادقة متعددة العوامل لجميع عمليات الوصول الإداري إلى قاعدة بياناتنا واستضافتنا وشيفرتنا المصدرية.
+- **إدارة الثغرات الأمنية:** فحص آلي للتبعيات والشيفرة، مع إصلاح الثغرات المكتشفة ضمن مهل زمنية محددة حسب درجة خطورتها.
+- **الاستجابة للحوادث:** نحتفظ بخطة للاستجابة للحوادث تشمل التحديد والاحتواء والاستئصال والتعافي. وإذا أثر أي اختراق على بياناتك، فسنخطرك ونخطر السلطات المختصة وفقًا لما يقتضيه القانون المعمول به.
 
 ## 6. التخلص من البيانات
-عندما تصل البيانات إلى نهاية فترة الاحتفاظ بها، يتم حذفها بأمان باستخدام طرق قياسية في الصناعة تضمن عدم إمكانية استرداد البيانات.
-
-## 7. الاستجابة للحوادث
-نحن نحتفظ بخطة قوية للاستجابة للحوادث (IRP) لمعالجة أي انتهاكات أمنية محتملة، بما في ذلك مراحل التحديد والاحتواء والاستئصال والاسترداد. في حالة حدوث خرق للبيانات، سنقوم بإخطار المستخدمين المتضررين والسلطات المختصة وفقًا للقوانين المعمول بها.
+تتم إزالة البيانات المحذوفة نهائيًا من قاعدة بيانات الإنتاج لدينا، ولا يقتصر الأمر على إخفائها أو تمييزها كمحذوفة.
 `;

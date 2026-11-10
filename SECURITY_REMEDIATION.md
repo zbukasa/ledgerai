@@ -49,6 +49,10 @@ The schema changed (new columns + constraints). Generate and apply a migration:
   - `promo_redemptions` unique on **(user_id, promo_code)**
 - [ ] Existing users have `password_hash = NULL` and cannot log in until they set a
       password — decide on a password-reset / re-onboarding flow for any real accounts.
+- [ ] Bank sync never wrote `bank_transactions.connection_id` before 2026-10-16. Unlink and
+      push-to-ledger are now scoped by it, so backfill any existing rows (or delete pre-launch
+      test data): `UPDATE bank_transactions bt SET connection_id = ba.connection_id FROM
+      bank_accounts ba WHERE bt.connection_id IS NULL AND bt.account_id = ba.account_id_provider;`
 
 ---
 
@@ -103,9 +107,8 @@ The schema changed (new columns + constraints). Generate and apply a migration:
 
 ## 🟡 Remaining follow-ups (flagged, not yet done)
 
-- [ ] **`xlsx@0.18.5`** (prototype pollution + ReDoS) has **no npm-registry fix**. Migrate
-      to the maintained SheetJS CDN build (`https://cdn.sheetjs.com/`) or swap to
-      `exceljs`. Left in place to avoid breaking the export feature silently.
+- [x] **`xlsx`** moved to the patched SheetJS CDN build 0.20.3 (2026-10-16).
+- [x] **`jspdf` 4 / `jspdf-autotable` 5** upgrade (critical advisory) and `npm audit fix` (2026-10-16).
 - [ ] **`drizzle-kit`** advisory needs a breaking major bump — dev-only migration tool,
       upgrade when you next touch migrations.
 - [ ] **Client paywall/biometric UX**: `BiometricAuth` and subscription gates are still
@@ -113,3 +116,22 @@ The schema changed (new columns + constraints). Generate and apply a migration:
       real biometric check (WebAuthn / native) and server-verified subscription state.
 - [ ] **Bundle size**: the main chunk is ~3.6 MB — consider code-splitting.
 - [ ] Bundle a proper password-reset flow for the new `password_hash` requirement.
+- [ ] **The client has no real login.** `BiometricAuth` is a local profile picker and
+      `AuthContext` calls `/auth/token` with the profile *name* and the literal `'password'`,
+      which the hardened server always rejects — so no client feature that needs a server
+      JWT (bank connect, AI proxy, account deletion) works end to end. Needs real
+      email/password sign-in + registration wired to `/auth/*`; consumer MFA builds on it.
+- [ ] **In-app account deletion UI** (server `DELETE /account` exists; needs the real login
+      above, then a Profile-screen button that also wipes the device's local copy).
+- [ ] **Plaid provider**: only `MockBankProvider` exists. The real one must implement
+      `revokeAccess` with Plaid `/item/remove`.
+
+## Plaid readiness (2026-10-16)
+
+- Policies rewritten to match the real stack (Supabase DB, Google Cloud hosting, bcrypt auth,
+  no consumer MFA yet) in all languages; internal ISP now lives in
+  `docs/INFORMATION_SECURITY_POLICY.md`.
+- `DELETE /bank/connections/:id` (revoke + purge, optional `?purgeLedger=true`) and
+  `DELETE /account` (password-confirmed, full purge) added; disconnect UI in Bank screen.
+- Dependabot config + CodeQL / `npm audit` CI workflow added. **Enable Dependabot alerts and
+  security updates in the GitHub repo settings** — the config file alone does not.

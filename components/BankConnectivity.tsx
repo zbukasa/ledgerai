@@ -14,7 +14,8 @@ import {
     CheckCircle2,
     Loader2,
     Database,
-    Lock
+    Lock,
+    Trash2
 } from 'lucide-react';
 import { BankConnection, BankAccount } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
@@ -32,6 +33,9 @@ const BankConnectivity: React.FC = () => {
     const [accounts, setAccounts] = useState<BankAccount[]>([]);
     const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
     const [showLegal, setShowLegal] = useState(false);
+    const [disconnectTarget, setDisconnectTarget] = useState<string | null>(null);
+    const [purgeLedger, setPurgeLedger] = useState(false);
+    const [disconnecting, setDisconnecting] = useState(false);
     const { addToast } = useNotification();
     const { t } = useLanguage();
 
@@ -189,6 +193,31 @@ const BankConnectivity: React.FC = () => {
         }
     };
 
+    const handleDisconnect = async () => {
+        if (!disconnectTarget) return;
+        setDisconnecting(true);
+        try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`/bank/connections/${disconnectTarget}?purgeLedger=${purgeLedger}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                addToast(t('bank.disconnected'), "success");
+                if (selectedConnection === disconnectTarget) setSelectedConnection(null);
+                setDisconnectTarget(null);
+                setPurgeLedger(false);
+                fetchConnections();
+            } else {
+                addToast(t('bank.disconnectFailed'), "error");
+            }
+        } catch (error) {
+            addToast(t('bank.disconnectFailed'), "error");
+        } finally {
+            setDisconnecting(false);
+        }
+    };
+
     return (
         <div className="p-6 max-w-5xl mx-auto space-y-8">
             <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -297,6 +326,14 @@ const BankConnectivity: React.FC = () => {
                                                 {pushingId === conn.id ? <Loader2 size={14} className="animate-spin" /> : <ArrowUpRight size={14} />}
                                                 {t('bank.pushToLedger')}
                                             </button>
+                                            <button 
+                                                onClick={() => setDisconnectTarget(conn.id)}
+                                                className="p-2 hover:bg-red-500/10 rounded-lg transition-colors text-[var(--text-secondary)] hover:text-red-500"
+                                                title={t('bank.disconnect')}
+                                                aria-label={t('bank.disconnect')}
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
                                         </div>
                                     </div>
                                     
@@ -384,6 +421,57 @@ const BankConnectivity: React.FC = () => {
                         className="fixed inset-0 z-50"
                     >
                         <LegalScreen onBack={() => setShowLegal(false)} />
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {disconnectTarget && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+                        onClick={() => !disconnecting && setDisconnectTarget(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.95 }}
+                            role="dialog"
+                            aria-modal="true"
+                            className="w-full max-w-md bg-[var(--bg-secondary)] border border-[var(--border-primary-translucent)] rounded-2xl p-6 space-y-4"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <h3 className="font-bold text-lg">{t('bank.disconnectTitle')}</h3>
+                            <p className="text-sm text-[var(--text-secondary)]">{t('bank.disconnectBody')}</p>
+                            <label className="flex items-start gap-2 text-sm cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={purgeLedger}
+                                    onChange={(e) => setPurgeLedger(e.target.checked)}
+                                    className="mt-0.5 w-4 h-4 rounded"
+                                />
+                                <span>{t('bank.disconnectPurgeLedger')}</span>
+                            </label>
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button
+                                    onClick={() => { setDisconnectTarget(null); setPurgeLedger(false); }}
+                                    disabled={disconnecting}
+                                    className="px-4 py-2 rounded-xl text-sm font-bold hover:bg-[var(--bg-tertiary)] disabled:opacity-50"
+                                >
+                                    {t('bank.cancel')}
+                                </button>
+                                <button
+                                    onClick={handleDisconnect}
+                                    disabled={disconnecting}
+                                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
+                                >
+                                    {disconnecting && <Loader2 size={14} className="animate-spin" />}
+                                    {t('bank.disconnect')}
+                                </button>
+                            </div>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>

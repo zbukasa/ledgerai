@@ -478,7 +478,14 @@
     "syncComplete": "Sync complete: {count} new transactions.",
     "syncFailed": "Sync failed",
     "ledgerUpdated": "Ledger updated: {count} transactions ingested.",
-    "pushFailed": "Push failed: {error}"
+    "pushFailed": "Push failed: {error}",
+    "disconnect": "Disconnect",
+    "disconnectTitle": "Disconnect this bank?",
+    "disconnectBody": "We will revoke LedgerAI's access to this bank and permanently delete the accounts, balances and transactions we retrieved from it. This cannot be undone.",
+    "disconnectPurgeLedger": "Also remove the transactions I imported into my ledger from this bank",
+    "cancel": "Cancel",
+    "disconnected": "Bank disconnected and its data deleted.",
+    "disconnectFailed": "Could not disconnect the bank. Please try again."
   },
   "voice": {
     "start": "Voice Entry"

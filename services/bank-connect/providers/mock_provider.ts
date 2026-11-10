@@ -9,6 +9,10 @@ export class MockBankProvider implements BankProvider {
         return `mock_link_token_${userId}_${Date.now()}`;
     }
 
+    async revokeAccess(_accessToken: string): Promise<void> {
+        // Nothing to revoke upstream for the mock provider.
+    }
+
     async exchangePublicToken(publicToken: string): Promise<{ accessToken: string; refreshToken?: string; institutionId: string }> {
         return {
             accessToken: `mock_access_token_${uuidv4()}`,

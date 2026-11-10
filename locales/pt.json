@@ -474,7 +474,14 @@
     "syncComplete": "Sincronização concluída: {count} novas transações.",
     "syncFailed": "Falha na sincronização",
     "ledgerUpdated": "Livro-razão atualizado: {count} transações ingeridas.",
-    "pushFailed": "Falha no envio: {error}"
+    "pushFailed": "Falha no envio: {error}",
+    "disconnect": "Desconectar",
+    "disconnectTitle": "Desconectar este banco?",
+    "disconnectBody": "Revogaremos o acesso do LedgerAI a este banco e excluiremos permanentemente as contas, saldos e transações que obtivemos dele. Esta ação não pode ser desfeita.",
+    "disconnectPurgeLedger": "Remover também as transações que importei para o meu livro-razão a partir deste banco",
+    "cancel": "Cancelar",
+    "disconnected": "Banco desconectado e seus dados excluídos.",
+    "disconnectFailed": "Não foi possível desconectar o banco. Tente novamente."
   },
   "voice": {
     "start": "Entrada de Voz"

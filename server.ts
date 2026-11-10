@@ -14,6 +14,7 @@ import { generateTransactionHash } from './services/serverHashUtils';
 import { v4 as uuidv4 } from 'uuid';
 import { BankSyncService } from './services/bank-connect/bank_sync_service';
 import { MockBankProvider } from './services/bank-connect/providers/mock_provider';
+import { BankProvider } from './services/bank-connect/providers/base';
 import { BankConnection, BankTransaction } from './types';
 import bcrypt from 'bcryptjs';
 import { db } from './src/db';
@@ -527,6 +528,51 @@ app.use('/auth', authRouter);
 
 const bankSyncService = new BankSyncService(BANK_TOKEN_ENCRYPTION_KEY);
 const mockProvider = new MockBankProvider();
+const bankProviders: Record<string, BankProvider> = { [mockProvider.name]: mockProvider };
+
+type BankConnectionRow = typeof schema.bankConnections.$inferSelect;
+type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+// Revoke our access upstream (Plaid /item/remove) so the institution link stops existing
+// at the provider too. Throws if the provider is unknown or the call fails.
+async function revokeBankAccess(connection: BankConnectionRow): Promise<void> {
+    const provider = bankProviders[connection.providerName];
+    if (!provider) throw new Error(`No provider registered for '${connection.providerName}'`);
+    await provider.revokeAccess(bankSyncService.decryptToken(connection.accessTokenEncrypted));
+}
+
+// Permanently delete everything retrieved through a bank connection: transactions, accounts,
+// sync cursor and the encrypted tokens. Optionally also removes the ledger entries the user
+// imported from it. Returns the number of ledger entries removed.
+async function purgeBankConnection(
+    tx: DbTx,
+    connection: BankConnectionRow,
+    purgeLedger: boolean
+): Promise<number> {
+    let ledgerRemoved = 0;
+    if (purgeLedger) {
+        // Imported ledger rows carry sourceRef = '<provider>:<providerTxnId>' (see Tier 1 ingest).
+        // Matched via subquery so large histories don't hit the bind-parameter limit.
+        const importedRefs = tx.select({
+            ref: sql<string>`${connection.providerName} || ':' || ${schema.bankTransactions.providerTxnId}`
+        })
+            .from(schema.bankTransactions)
+            .where(eq(schema.bankTransactions.connectionId, connection.id));
+        const removed = await tx.delete(schema.transactions)
+            .where(and(
+                eq(schema.transactions.userId, connection.userId),
+                inArray(schema.transactions.sourceRef, importedRefs)
+            ))
+            .returning({ id: schema.transactions.id });
+        ledgerRemoved = removed.length;
+    }
+
+    await tx.delete(schema.bankTransactions).where(eq(schema.bankTransactions.connectionId, connection.id));
+    await tx.delete(schema.bankSyncState).where(eq(schema.bankSyncState.connectionId, connection.id));
+    await tx.delete(schema.bankAccounts).where(eq(schema.bankAccounts.connectionId, connection.id));
+    await tx.delete(schema.bankConnections).where(eq(schema.bankConnections.id, connection.id));
+    return ledgerRemoved;
+}
 
 // --- Auth Middleware ---
 const authenticateJWT = (req: any, res: any, next: any) => {
@@ -1188,6 +1234,54 @@ accountRouter.post('/usage/consume', authenticateJWT, async (req: any, res) => {
     }
 });
 
+// Permanently delete the account and all data we hold for it. Requires the current password
+// so a stolen session token alone cannot destroy an account. Bank access is revoked
+// best-effort: a provider outage must not block a user's right to deletion, so failures are
+// logged for manual follow-up instead of aborting.
+accountRouter.delete('/', authLimiter, authenticateJWT, async (req: any, res) => {
+    const password = req.body?.password;
+    if (typeof password !== 'string' || !password) {
+        return res.status(400).json({ error: 'Password is required to delete your account.' });
+    }
+
+    try {
+        const userId = req.user.id;
+        const user = await db.query.users.findFirst({ where: eq(schema.users.id, userId) });
+        if (!user) return res.status(404).json({ error: 'Not found' });
+        if (!user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
+            return res.status(401).json({ error: 'Incorrect password.' });
+        }
+
+        const connections = await db.query.bankConnections.findMany({
+            where: eq(schema.bankConnections.userId, userId)
+        });
+        for (const connection of connections) {
+            try {
+                await revokeBankAccess(connection);
+            } catch (e: any) {
+                console.error(`[Account deletion] Revocation failed for connection ${connection.id} (${connection.providerName}); revoke manually:`, e?.message || e);
+            }
+        }
+
+        await db.transaction(async (tx) => {
+            for (const connection of connections) {
+                await purgeBankConnection(tx, connection, false);
+            }
+            await tx.delete(schema.transactions).where(eq(schema.transactions.userId, userId));
+            await tx.delete(schema.trips).where(eq(schema.trips.userId, userId));
+            await tx.delete(schema.brickBatches).where(eq(schema.brickBatches.userId, userId));
+            await tx.delete(schema.promoRedemptions).where(eq(schema.promoRedemptions.userId, userId));
+            await tx.delete(schema.users).where(eq(schema.users.id, userId));
+        });
+
+        console.log(`[Account deletion] Deleted account ${userId} and ${connections.length} bank connection(s)`);
+        res.json({ deleted: true });
+    } catch (e) {
+        console.error('Account deletion error:', e);
+        res.status(500).json({ error: 'Account deletion failed.' });
+    }
+});
+
 app.use('/account', accountRouter);
 
 bankRouter.get('/connections', authenticateJWT, async (req, res) => {
@@ -1217,6 +1311,36 @@ bankRouter.get('/connections/:id/accounts', authenticateJWT, async (req, res) =>
         where: eq(schema.bankAccounts.connectionId, connectionId)
     });
     res.json(accounts);
+});
+
+// Unlink a bank: revoke access with the provider, then permanently delete everything retrieved
+// through the connection. Ledger entries already imported are the user's own records and are
+// kept unless ?purgeLedger=true. Revocation failure aborts (502) so the user can retry rather
+// than leaving a live link at the provider that we no longer hold a token for.
+bankRouter.delete('/connections/:id', authenticateJWT, async (req, res) => {
+    const userId = (req as any).user.id;
+    const purgeLedger = req.query.purgeLedger === 'true';
+
+    try {
+        const connection = await db.query.bankConnections.findFirst({
+            where: and(eq(schema.bankConnections.id, req.params.id), eq(schema.bankConnections.userId, userId))
+        });
+        if (!connection) return res.status(404).json({ error: 'Connection not found' });
+
+        try {
+            await revokeBankAccess(connection);
+        } catch (e: any) {
+            console.error(`[Tier 2] Revocation failed for connection ${connection.id}:`, e?.message || e);
+            return res.status(502).json({ error: 'Could not revoke bank access. Please try again.' });
+        }
+
+        const ledgerRemoved = await db.transaction(tx => purgeBankConnection(tx, connection, purgeLedger));
+        console.log(`[Tier 2] Deleted bank connection ${connection.id} (ledger entries removed: ${ledgerRemoved})`);
+        res.json({ deleted: true, ledger_transactions_removed: ledgerRemoved });
+    } catch (e) {
+        console.error('[Tier 2] Disconnect error:', e);
+        res.status(500).json({ error: 'Failed to disconnect bank' });
+    }
 });
 
 bankRouter.post('/link-token', authenticateJWT, async (req, res) => {
@@ -1296,7 +1420,7 @@ bankRouter.post('/sync', authenticateJWT, async (req, res) => {
     }
 
     // 2. Persist transactions using onConflictDoNothing for concurrency safety
-    const { inserted } = await bankSyncService.persistTransactions(transactions);
+    const { inserted } = await bankSyncService.persistTransactions(connection_id, transactions);
 
     // Update sync state with cursor for incremental sync
     await db.insert(schema.bankSyncState).values({
@@ -1331,23 +1455,11 @@ bankRouter.post('/push-to-ledger', authenticateJWT, async (req, res) => {
     });
     if (!connection) return res.status(404).json({ error: 'Connection not found' });
 
-    // 1. Fetch accounts for this connection
-    const accounts = await db.query.bankAccounts.findMany({
-        where: eq(schema.bankAccounts.connectionId, connection_id)
-    });
-    const accountIds = accounts.map(a => a.accountIdProvider);
-
-    if (accountIds.length === 0) {
-        return res.json({ 
-            message: 'No accounts found for this connection', 
-            result: { summary: { inserted: 0, skipped: 0, total: 0 } } 
-        });
-    }
-
-    // 2. Fetch un-ingested transactions for these accounts
+    // 1. Fetch un-ingested transactions for this connection. Scoped by connection, not by
+    // provider account id, which is not guaranteed unique across users (e.g. mock ids).
     const txnsToPush = await db.query.bankTransactions.findMany({
         where: and(
-            inArray(schema.bankTransactions.accountId, accountIds),
+            eq(schema.bankTransactions.connectionId, connection_id),
             isNull(schema.bankTransactions.ingestedAt)
         )
     });
@@ -1359,7 +1471,7 @@ bankRouter.post('/push-to-ledger', authenticateJWT, async (req, res) => {
         });
     }
 
-    // 3. Push to Tier 1
+    // 2. Push to Tier 1
     try {
         const response = await fetch(`http://localhost:${PORT}/integrations/bank/transactions/bulk`, {
             method: 'POST',
@@ -1388,7 +1500,7 @@ bankRouter.post('/push-to-ledger', authenticateJWT, async (req, res) => {
 
         const result = await response.json();
 
-        // 4. Update ingestedAt for the transactions that were confirmed as inserted by Tier 1
+        // 3. Update ingestedAt for the transactions that were confirmed as inserted by Tier 1
         // Safety: match on both providerTxnId and accountId, scoped to this connection's accounts
         if (result.insertedSourceRefs && result.insertedSourceRefs.length > 0) {
             const insertedProviderTxnIds: string[] = [];
@@ -1410,7 +1522,7 @@ bankRouter.post('/push-to-ledger', authenticateJWT, async (req, res) => {
                     .set({ ingestedAt: new Date() })
                     .where(and(
                         inArray(schema.bankTransactions.providerTxnId, insertedProviderTxnIds),
-                        inArray(schema.bankTransactions.accountId, accountIds)
+                        eq(schema.bankTransactions.connectionId, connection_id)
                     ));
             }
         }
