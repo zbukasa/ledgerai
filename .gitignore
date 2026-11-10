@@ -39,3 +39,6 @@ uploads/
 *.njsproj
 *.sln
 *.sw?
+
+# Generated submission PDFs (regenerate from docs/*.md)
+docs/plaid-submission/
