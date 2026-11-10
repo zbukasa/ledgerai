@@ -109,6 +109,7 @@ The schema changed (new columns + constraints). Generate and apply a migration:
 
 - [x] **`xlsx`** moved to the patched SheetJS CDN build 0.20.3 (2026-10-16).
 - [x] **`jspdf` 4 / `jspdf-autotable` 5** upgrade (critical advisory) and `npm audit fix` (2026-10-16).
+- [x] 2026-11-10: `npm audit fix` for new multer/body-parser/vite/tar advisories; `@capacitor/assets` 4. Remaining: 8 moderate in the dev-only `drizzle-kit` chain.
 - [ ] **`drizzle-kit`** advisory needs a breaking major bump — dev-only migration tool,
       upgrade when you next touch migrations.
 - [ ] **Client paywall/biometric UX**: `BiometricAuth` and subscription gates are still
