@@ -17,6 +17,8 @@ import { MockBankProvider } from './services/bank-connect/providers/mock_provide
 import { BankProvider } from './services/bank-connect/providers/base';
 import { BankConnection, BankTransaction } from './types';
 import bcrypt from 'bcryptjs';
+import QRCode from 'qrcode';
+import { generateTotpSecret, verifyTotp, otpauthUrl, generateRecoveryCodes, hashRecoveryCode } from './src/services/totp';
 import { db } from './src/db';
 import * as schema from './src/db/schema';
 import { eq, and, inArray, isNull, sql, desc, gte, lte } from 'drizzle-orm';
@@ -36,7 +38,8 @@ function requireSecret(name: string): string {
 const JWT_SECRET = requireSecret('JWT_SECRET');
 const INTERNAL_API_KEY = requireSecret('INTERNAL_API_KEY');
 const BANK_TOKEN_ENCRYPTION_KEY = requireSecret('BANK_TOKEN_ENCRYPTION_KEY');
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '2h';
+// Short-lived: clients renew it with their refresh token (see auth routes).
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '15m';
 const JWT_SIGN_OPTIONS: jwt.SignOptions = { expiresIn: JWT_EXPIRES_IN as jwt.SignOptions['expiresIn'] };
 const BCRYPT_ROUNDS = 12;
 
@@ -71,7 +74,7 @@ io.use((socket, next) => {
         || (socket.handshake.headers?.authorization || '').split(' ')[1];
     if (!token) return next(new Error('Authentication required'));
     jwt.verify(token, JWT_SECRET, (err: any, decoded: any) => {
-        if (err || !decoded?.id) return next(new Error('Invalid token'));
+        if (err || !decoded?.id || decoded.typ !== 'access') return next(new Error('Invalid token'));
         (socket as any).userId = decoded.id;
         next();
     });
@@ -93,6 +96,10 @@ io.on('connection', (socket) => {
     });
 });
 
+// Behind Cloud Run's front end the socket address is the proxy's, so without this every
+// client shares one rate-limit bucket. Trust exactly the configured number of proxy hops.
+app.set('trust proxy', Number(process.env.TRUST_PROXY_HOPS ?? (isProd ? 1 : 0)));
+
 app.use(cors({ origin: corsOrigin, credentials: true }));
 app.use(morgan('dev'));
 app.use(express.json({ limit: '50mb' }));
@@ -109,9 +116,12 @@ const apiLimiter = rateLimit({
 });
 
 // Stricter limiter for authentication endpoints to blunt credential-stuffing / brute force.
+// Only failed attempts count: many mobile users share one carrier IP, and successful
+// sign-ins, code checks and setup steps must not lock each other out.
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 10,
+    skipSuccessfulRequests: true,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many authentication attempts, please try again later.' }
@@ -441,91 +451,6 @@ apiRouter.post('/receipts/upload', authenticateAPIKey, upload.single('receipt'),
 
 app.use('/api/v1', apiRouter);
 
-// --- Auth Routes ---
-const authRouter = express.Router();
-
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-authRouter.post('/register', authLimiter, async (req, res) => {
-    const { email, password, name } = req.body || {};
-
-    if (!email || !EMAIL_RE.test(email)) {
-        return res.status(400).json({ error: 'A valid email is required.' });
-    }
-    if (typeof password !== 'string' || password.length < 8) {
-        return res.status(400).json({ error: 'Password must be at least 8 characters.' });
-    }
-
-    try {
-        const existing = await db.query.users.findFirst({ where: eq(schema.users.email, email) });
-        if (existing) {
-            // Do not reveal whether the email is registered beyond a generic conflict.
-            return res.status(409).json({ error: 'Unable to register with those details.' });
-        }
-
-        const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-        const id = uuidv4();
-        await db.insert(schema.users).values({
-            id,
-            email,
-            passwordHash,
-            tier: 'free',
-            apiKey: uuidv4(),
-            usagePeriodStart: new Date(),
-            createdAt: new Date(),
-        });
-
-        const token = jwt.sign({ id, email }, JWT_SECRET, JWT_SIGN_OPTIONS);
-        // Note: name is currently a client-side profile concept; not persisted server-side.
-        res.status(201).json({
-            access_token: token,
-            token_type: 'bearer',
-            user: { id, email, name: name || null, tier: 'free' },
-        });
-    } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({ error: 'Registration failed.' });
-    }
-});
-
-authRouter.post('/token', authLimiter, async (req, res) => {
-    const source = req.body && Object.keys(req.body).length ? req.body : req.query;
-    const email = (source.username || source.email) as string | undefined;
-    const password = source.password as string | undefined;
-
-    if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password are required.' });
-    }
-
-    try {
-        const user = await db.query.users.findFirst({ where: eq(schema.users.email, email) });
-
-        // Constant-ish work whether or not the user exists, to avoid a user-enumeration
-        // timing oracle. Always run a bcrypt compare against something.
-        const hashToCheck = user?.passwordHash
-            || '$2a$12$0000000000000000000000000000000000000000000000000000a'; // dummy, never matches
-        const ok = await bcrypt.compare(password, hashToCheck);
-
-        if (!user || !user.passwordHash || !ok) {
-            return res.status(401).json({ error: 'Invalid email or password.' });
-        }
-
-        const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, JWT_SIGN_OPTIONS);
-        res.json({
-            access_token: token,
-            token_type: 'bearer',
-            user: { id: user.id, email: user.email, tier: user.tier },
-            // apiKey is intentionally NOT returned here; it is a long-lived credential
-            // fetched only via an authenticated key-management endpoint.
-        });
-    } catch (error) {
-        console.error('Auth error:', error);
-        res.status(500).json({ error: 'Authentication failed.' });
-    }
-});
-
-app.use('/auth', authRouter);
-
 const bankSyncService = new BankSyncService(BANK_TOKEN_ENCRYPTION_KEY);
 const mockProvider = new MockBankProvider();
 const bankProviders: Record<string, BankProvider> = { [mockProvider.name]: mockProvider };
@@ -575,43 +500,53 @@ async function purgeBankConnection(
 }
 
 // --- Auth Middleware ---
+// Access tokens are short-lived JWTs with typ 'access'. The interim token issued between the
+// password and two-factor steps has typ 'mfa' and must never authenticate an API call.
 const authenticateJWT = (req: any, res: any, next: any) => {
     const authHeader = req.headers.authorization;
     const token = authHeader && authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
-    if (token) {
-        jwt.verify(token, JWT_SECRET, async (err: any, decoded: any) => {
-            if (err || !decoded?.id) return res.sendStatus(403);
+    if (!token) return res.sendStatus(401);
 
-            try {
-                // Check promo expiration
-                const user = await db.query.users.findFirst({
-                    where: eq(schema.users.id, decoded.id)
-                });
+    jwt.verify(token, JWT_SECRET, async (err: any, decoded: any) => {
+        // 401 (not 403) so clients know to refresh the session and retry.
+        if (err || !decoded?.id || decoded.typ !== 'access') return res.sendStatus(401);
 
-                if (user && user.promoIsActive && user.promoExpiresAt && new Date(user.promoExpiresAt) < new Date()) {
-                    await db.update(schema.users)
-                        .set({
-                            promoIsActive: false,
-                            tier: 'free' // Revert to free tier
-                        })
-                        .where(eq(schema.users.id, user.id));
-                    
-                    decoded.tier = 'free';
-                    decoded.promoIsActive = false;
-                } else if (user) {
-                    decoded.tier = user.tier;
-                    decoded.promoIsActive = user.promoIsActive;
-                }
-            } catch (e) {
-                console.error('Error checking promo expiration:', e);
+        try {
+            const user = await db.query.users.findFirst({
+                where: eq(schema.users.id, decoded.id)
+            });
+            // Deleted account: its outstanding access tokens stop working immediately.
+            if (!user) return res.sendStatus(401);
+
+            if (user.promoIsActive && user.promoExpiresAt && new Date(user.promoExpiresAt) < new Date()) {
+                await db.update(schema.users)
+                    .set({
+                        promoIsActive: false,
+                        tier: 'free' // Revert to free tier
+                    })
+                    .where(eq(schema.users.id, user.id));
+
+                decoded.tier = 'free';
+                decoded.promoIsActive = false;
+            } else {
+                decoded.tier = user.tier;
+                decoded.promoIsActive = user.promoIsActive;
             }
+            decoded.mfaEnabled = user.totpEnabled;
+        } catch (e) {
+            console.error('Error loading user for request:', e);
+            return res.status(503).json({ error: 'Service temporarily unavailable.' });
+        }
 
-            req.user = decoded;
-            next();
-        });
-    } else {
-        res.sendStatus(401);
-    }
+        req.user = decoded;
+        next();
+    });
+};
+
+// Bank connectivity is only offered once the account has two-factor sign-in turned on.
+const requireMfa = (req: any, res: any, next: any) => {
+    if (req.user?.mfaEnabled === true) return next();
+    res.status(403).json({ error: 'Turn on two-factor authentication to connect a bank.', code: 'mfa_required' });
 };
 
 const authenticateInternal = (req: any, res: any, next: any) => {
@@ -634,6 +569,314 @@ const authenticateInternal = (req: any, res: any, next: any) => {
         res.status(401).json({ error: 'Unauthorized' });
     }
 };
+
+// --- Auth Routes ---
+// Sign-in issues a short-lived access token (JWT_EXPIRES_IN) plus a refresh token tied to a
+// row in auth_sessions. Clients refresh silently, and sign-out/deletion revoke the session.
+// Accounts with two-factor on get an interim 'mfa' token from /token and finish at /mfa/verify.
+const authRouter = express.Router();
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // sliding: renewed on every refresh
+const MFA_TOKEN_TTL = '5m';
+const TOTP_ISSUER = 'LedgerAI';
+
+// Refresh endpoints see far more legitimate traffic than password/code checks.
+const refreshLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 60,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' }
+});
+
+type UserRow = typeof schema.users.$inferSelect;
+
+const normalizeEmail = (email: unknown) => String(email || '').trim().toLowerCase();
+const sha256 = (value: string) => crypto.createHash('sha256').update(value).digest('hex');
+
+function publicUser(user: UserRow) {
+    return { id: user.id, email: user.email, name: user.name, tier: user.tier, mfaEnabled: user.totpEnabled };
+}
+
+function signAccessToken(user: UserRow): string {
+    return jwt.sign({ id: user.id, email: user.email, typ: 'access' }, JWT_SECRET, JWT_SIGN_OPTIONS);
+}
+
+async function createSession(user: UserRow) {
+    const id = uuidv4();
+    const secret = crypto.randomBytes(32).toString('base64url');
+    const now = new Date();
+    await db.insert(schema.authSessions).values({
+        id,
+        userId: user.id,
+        tokenHash: sha256(secret),
+        createdAt: now,
+        lastUsedAt: now,
+        expiresAt: new Date(now.getTime() + SESSION_TTL_MS),
+    });
+    return {
+        access_token: signAccessToken(user),
+        refresh_token: `${id}.${secret}`,
+        token_type: 'bearer',
+        user: publicUser(user),
+    };
+}
+
+// Looks up a live session by refresh token. Returns null for unknown, revoked, expired or
+// mismatched tokens.
+async function findSession(refreshToken: unknown) {
+    const [id, secret] = String(refreshToken || '').split('.');
+    if (!id || !secret || !UUID_RE.test(id)) return null;
+    const session = await db.query.authSessions.findFirst({ where: eq(schema.authSessions.id, id) });
+    if (!session || session.revokedAt || session.expiresAt < new Date()) return null;
+    const expected = Buffer.from(session.tokenHash);
+    const given = Buffer.from(sha256(secret));
+    if (expected.length !== given.length || !crypto.timingSafeEqual(expected, given)) return null;
+    return session;
+}
+
+// Accepts either a current authenticator code or an unused recovery code. Persists the
+// replay guard / consumed recovery code on success.
+async function checkSecondFactor(user: UserRow, code: unknown): Promise<boolean> {
+    if (!user.totpEnabled || !user.totpSecretEncrypted) return false;
+    const input = String(code || '').trim();
+    if (!input) return false;
+
+    if (/^\d[\d\s]*$/.test(input)) {
+        const secret = bankSyncService.decryptToken(user.totpSecretEncrypted);
+        const step = verifyTotp(secret, input, user.totpLastStep);
+        if (step === null) return false;
+        await db.update(schema.users).set({ totpLastStep: step }).where(eq(schema.users.id, user.id));
+        return true;
+    }
+
+    const hashes: string[] = JSON.parse(user.recoveryCodeHashes || '[]');
+    const hash = hashRecoveryCode(input);
+    if (!hashes.includes(hash)) return false;
+    await db.update(schema.users)
+        .set({ recoveryCodeHashes: JSON.stringify(hashes.filter(h => h !== hash)) })
+        .where(eq(schema.users.id, user.id));
+    return true;
+}
+
+async function verifyPassword(user: UserRow | undefined, password: unknown): Promise<boolean> {
+    // Always run a bcrypt compare, even for unknown users, so response time doesn't reveal
+    // which emails are registered.
+    const hashToCheck = user?.passwordHash
+        || '$2a$12$0000000000000000000000000000000000000000000000000000a'; // dummy, never matches
+    const ok = await bcrypt.compare(String(password || ''), hashToCheck);
+    return !!(user && user.passwordHash && ok);
+}
+
+authRouter.post('/register', authLimiter, async (req, res) => {
+    const { password, name, id: requestedId } = req.body || {};
+    const email = normalizeEmail(req.body?.email);
+
+    if (!EMAIL_RE.test(email)) {
+        return res.status(400).json({ error: 'A valid email is required.' });
+    }
+    if (typeof password !== 'string' || password.length < 8) {
+        return res.status(400).json({ error: 'Password must be at least 8 characters.' });
+    }
+    // The app may pass the id of the profile already on the device, so ledger rows it has
+    // created offline stay attached to the new account.
+    if (requestedId !== undefined && (typeof requestedId !== 'string' || !UUID_RE.test(requestedId))) {
+        return res.status(400).json({ error: 'Invalid profile id.' });
+    }
+
+    try {
+        const id = requestedId || uuidv4();
+        const existing = await db.query.users.findFirst({
+            where: sql`lower(${schema.users.email}) = ${email} OR ${schema.users.id} = ${id}`
+        });
+        if (existing) {
+            return res.status(409).json({ error: 'An account with this email already exists. Try signing in.' });
+        }
+
+        const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+        const [user] = await db.insert(schema.users).values({
+            id,
+            email,
+            name: typeof name === 'string' ? name.trim().slice(0, 100) || null : null,
+            passwordHash,
+            tier: 'free',
+            apiKey: uuidv4(),
+            usagePeriodStart: new Date(),
+            createdAt: new Date(),
+        }).returning();
+
+        res.status(201).json(await createSession(user));
+    } catch (error) {
+        console.error('Registration error:', error);
+        res.status(500).json({ error: 'Registration failed.' });
+    }
+});
+
+authRouter.post('/token', authLimiter, async (req, res) => {
+    const email = normalizeEmail(req.body?.username || req.body?.email);
+    const password = req.body?.password;
+
+    if (!email || !password) {
+        return res.status(400).json({ error: 'Email and password are required.' });
+    }
+
+    try {
+        const user = await db.query.users.findFirst({ where: sql`lower(${schema.users.email}) = ${email}` });
+        if (!(await verifyPassword(user, password)) || !user) {
+            return res.status(401).json({ error: 'Incorrect email or password.' });
+        }
+
+        if (user.totpEnabled) {
+            const mfaToken = jwt.sign({ id: user.id, typ: 'mfa' }, JWT_SECRET, { expiresIn: MFA_TOKEN_TTL });
+            return res.json({ mfa_required: true, mfa_token: mfaToken });
+        }
+
+        res.json(await createSession(user));
+    } catch (error) {
+        console.error('Auth error:', error);
+        res.status(500).json({ error: 'Authentication failed.' });
+    }
+});
+
+authRouter.post('/mfa/verify', authLimiter, async (req, res) => {
+    let decoded: any;
+    try {
+        decoded = jwt.verify(String(req.body?.mfa_token || ''), JWT_SECRET);
+    } catch {
+        return res.status(401).json({ error: 'Your sign-in expired. Please enter your password again.', code: 'mfa_token_expired' });
+    }
+    if (decoded?.typ !== 'mfa' || !decoded.id) {
+        return res.status(401).json({ error: 'Your sign-in expired. Please enter your password again.', code: 'mfa_token_expired' });
+    }
+
+    try {
+        const user = await db.query.users.findFirst({ where: eq(schema.users.id, decoded.id) });
+        if (!user || !(await checkSecondFactor(user, req.body?.code))) {
+            return res.status(401).json({ error: 'That code is not valid. Try the newest code in your authenticator app.' });
+        }
+        res.json(await createSession(user));
+    } catch (error) {
+        console.error('MFA verify error:', error);
+        res.status(500).json({ error: 'Authentication failed.' });
+    }
+});
+
+authRouter.post('/refresh', refreshLimiter, async (req, res) => {
+    try {
+        const session = await findSession(req.body?.refresh_token);
+        if (!session) return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+        const user = await db.query.users.findFirst({ where: eq(schema.users.id, session.userId) });
+        if (!user) return res.status(401).json({ error: 'Session expired. Please sign in again.' });
+
+        // Rotate the secret so a copied refresh token stops working after the next refresh.
+        const secret = crypto.randomBytes(32).toString('base64url');
+        const now = new Date();
+        await db.update(schema.authSessions)
+            .set({ tokenHash: sha256(secret), lastUsedAt: now, expiresAt: new Date(now.getTime() + SESSION_TTL_MS) })
+            .where(eq(schema.authSessions.id, session.id));
+
+        res.json({
+            access_token: signAccessToken(user),
+            refresh_token: `${session.id}.${secret}`,
+            token_type: 'bearer',
+            user: publicUser(user),
+        });
+    } catch (error) {
+        console.error('Refresh error:', error);
+        res.status(500).json({ error: 'Could not refresh session.' });
+    }
+});
+
+authRouter.post('/logout', refreshLimiter, async (req, res) => {
+    try {
+        const session = await findSession(req.body?.refresh_token);
+        if (session) {
+            await db.update(schema.authSessions).set({ revokedAt: new Date() }).where(eq(schema.authSessions.id, session.id));
+        }
+        res.json({ ok: true });
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({ error: 'Sign-out failed.' });
+    }
+});
+
+// Step 1 of turning on two-factor: create a secret and show it to the user. Nothing is
+// enforced until /mfa/enable confirms they can produce a valid code from it.
+authRouter.post('/mfa/setup', authLimiter, authenticateJWT, async (req: any, res) => {
+    try {
+        const user = await db.query.users.findFirst({ where: eq(schema.users.id, req.user.id) });
+        if (!user) return res.sendStatus(401);
+        if (user.totpEnabled) return res.status(409).json({ error: 'Two-factor authentication is already on.' });
+
+        const secret = generateTotpSecret();
+        await db.update(schema.users)
+            .set({ totpSecretEncrypted: bankSyncService.encryptToken(secret), totpLastStep: null })
+            .where(eq(schema.users.id, user.id));
+
+        const url = otpauthUrl(TOTP_ISSUER, user.email, secret);
+        res.json({ secret, otpauth_url: url, qr_data_url: await QRCode.toDataURL(url, { margin: 1, width: 240 }) });
+    } catch (error) {
+        console.error('MFA setup error:', error);
+        res.status(500).json({ error: 'Could not start two-factor setup.' });
+    }
+});
+
+authRouter.post('/mfa/enable', authLimiter, authenticateJWT, async (req: any, res) => {
+    try {
+        const user = await db.query.users.findFirst({ where: eq(schema.users.id, req.user.id) });
+        if (!user) return res.sendStatus(401);
+        if (user.totpEnabled) return res.status(409).json({ error: 'Two-factor authentication is already on.' });
+        if (!user.totpSecretEncrypted) return res.status(400).json({ error: 'Start setup first.' });
+
+        const secret = bankSyncService.decryptToken(user.totpSecretEncrypted);
+        const step = verifyTotp(secret, String(req.body?.code || ''), null);
+        if (step === null) {
+            return res.status(400).json({ error: 'That code is not valid. Check the time on your phone and try the newest code.' });
+        }
+
+        const recoveryCodes = generateRecoveryCodes();
+        await db.update(schema.users)
+            .set({
+                totpEnabled: true,
+                totpLastStep: step,
+                recoveryCodeHashes: JSON.stringify(recoveryCodes.map(hashRecoveryCode)),
+            })
+            .where(eq(schema.users.id, user.id));
+
+        res.json({ enabled: true, recovery_codes: recoveryCodes });
+    } catch (error) {
+        console.error('MFA enable error:', error);
+        res.status(500).json({ error: 'Could not turn on two-factor authentication.' });
+    }
+});
+
+// Turning two-factor off needs both the password and a current code (or a recovery code),
+// so neither a stolen session nor a stolen password alone can remove it.
+authRouter.post('/mfa/disable', authLimiter, authenticateJWT, async (req: any, res) => {
+    try {
+        const user = await db.query.users.findFirst({ where: eq(schema.users.id, req.user.id) });
+        if (!user) return res.sendStatus(401);
+        if (!user.totpEnabled) return res.json({ enabled: false });
+        if (!(await verifyPassword(user, req.body?.password))) {
+            return res.status(403).json({ error: 'Incorrect password.' });
+        }
+        if (!(await checkSecondFactor(user, req.body?.code))) {
+            return res.status(403).json({ error: 'That code is not valid.' });
+        }
+
+        await db.update(schema.users)
+            .set({ totpEnabled: false, totpSecretEncrypted: null, totpLastStep: null, recoveryCodeHashes: null })
+            .where(eq(schema.users.id, user.id));
+        res.json({ enabled: false });
+    } catch (error) {
+        console.error('MFA disable error:', error);
+        res.status(500).json({ error: 'Could not turn off two-factor authentication.' });
+    }
+});
+
+app.use('/auth', authRouter);
 
 // --- Tier 1: LedgerAI Core Ingestion Routes ---
 const coreRouter = express.Router();
@@ -1181,7 +1424,7 @@ accountRouter.get('/me', authenticateJWT, async (req: any, res) => {
     const user = await db.query.users.findFirst({
         where: eq(schema.users.id, req.user.id),
         columns: {
-            id: true, email: true, tier: true, promoIsActive: true, promoExpiresAt: true,
+            id: true, email: true, name: true, totpEnabled: true, tier: true, promoIsActive: true, promoExpiresAt: true,
             features: true, voiceCommandsUsed: true, scansUsed: true, usagePeriodStart: true,
             passwordHash: false, apiKey: false,
         }
@@ -1249,7 +1492,10 @@ accountRouter.delete('/', authLimiter, authenticateJWT, async (req: any, res) =>
         const user = await db.query.users.findFirst({ where: eq(schema.users.id, userId) });
         if (!user) return res.status(404).json({ error: 'Not found' });
         if (!user.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
-            return res.status(401).json({ error: 'Incorrect password.' });
+            return res.status(403).json({ error: 'Incorrect password.' });
+        }
+        if (user.totpEnabled && !(await checkSecondFactor(user, req.body?.code))) {
+            return res.status(403).json({ error: 'That two-factor code is not valid.', code: 'mfa_required' });
         }
 
         const connections = await db.query.bankConnections.findMany({
@@ -1271,6 +1517,7 @@ accountRouter.delete('/', authLimiter, authenticateJWT, async (req: any, res) =>
             await tx.delete(schema.trips).where(eq(schema.trips.userId, userId));
             await tx.delete(schema.brickBatches).where(eq(schema.brickBatches.userId, userId));
             await tx.delete(schema.promoRedemptions).where(eq(schema.promoRedemptions.userId, userId));
+            await tx.delete(schema.authSessions).where(eq(schema.authSessions.userId, userId));
             await tx.delete(schema.users).where(eq(schema.users.id, userId));
         });
 
@@ -1343,13 +1590,13 @@ bankRouter.delete('/connections/:id', authenticateJWT, async (req, res) => {
     }
 });
 
-bankRouter.post('/link-token', authenticateJWT, async (req, res) => {
+bankRouter.post('/link-token', authenticateJWT, requireMfa, async (req, res) => {
     const userId = (req as any).user.id;
     const token = await mockProvider.getLinkToken(userId);
     res.json({ link_token: token });
 });
 
-bankRouter.post('/exchange-token', authenticateJWT, async (req, res) => {
+bankRouter.post('/exchange-token', authenticateJWT, requireMfa, async (req, res) => {
     const { public_token } = req.body;
     const userId = (req as any).user.id;
     

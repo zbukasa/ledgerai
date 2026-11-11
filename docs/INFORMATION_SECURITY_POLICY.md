@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Owner** | [Name], Founder & Security Lead |
+| **Owner** | Zenas Bukasa, Founder & Security Lead |
 | **Security contact** | tradelab.mantis@gmail.com |
 | **Effective date** | October 16, 2026 |
 | **Review cycle** | At least annually, and after any security incident or significant change to the system |
@@ -43,7 +43,7 @@ The Security Lead keeps this table current as systems are added or removed.
 4. **Granting access.** Production access is granted only with the Security Lead's approval and recorded in the access register (section 10).
 5. **Removing access.** When someone leaves or changes role, their access to all systems is removed or adjusted within 24 hours, and any shared secrets they could see are rotated.
 6. **Secrets management.** Application secrets (`JWT_SECRET`, `INTERNAL_API_KEY`, `BANK_TOKEN_ENCRYPTION_KEY`, database and API credentials) are stored only in the hosting provider's secret configuration or local `.env` files excluded from git. The server refuses to start without them. Secrets are rotated immediately if exposure is suspected.
-7. **Application access.** Customer passwords are stored as bcrypt hashes. Every API request is authenticated, and access to financial data is checked against the owning account. Login is rate-limited.
+7. **Application access.** Customer passwords are stored as bcrypt hashes. Customers can turn on two-factor authentication (TOTP authenticator app, with single-use recovery codes), and it is required before a bank can be connected; turning it off requires the password and a current code. Sessions use 15-minute access tokens and revocable refresh tokens (only hashes are stored). Every API request is authenticated, and access to financial data is checked against the owning account. Failed sign-in and code attempts are rate-limited.
 
 ## 6. Data protection
 

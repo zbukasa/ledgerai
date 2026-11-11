@@ -136,6 +136,13 @@ export const users = pgTable('users', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash'), // bcrypt hash; null only for legacy/unmigrated rows
+  name: text('name'),
+  // Two-factor (TOTP). The secret is Fernet-encrypted; it is stored before totpEnabled is
+  // set so setup can be confirmed with a first code.
+  totpSecretEncrypted: text('totp_secret_encrypted'),
+  totpEnabled: boolean('totp_enabled').notNull().default(false),
+  totpLastStep: integer('totp_last_step'), // last accepted time step, blocks code replay
+  recoveryCodeHashes: text('recovery_code_hashes'), // JSON array of sha256 hex, single use
   tier: text('tier').notNull().default('free'), // 'free' | 'premium' | 'enterprise'
   // Server-authoritative usage counters (client values are never trusted for gating)
   voiceCommandsUsed: integer('voice_commands_used').notNull().default(0),
@@ -150,6 +157,18 @@ export const users = pgTable('users', {
   features: text('features'), // JSON string array
   apiKey: text('api_key').unique(), // For external API access (MCP/n8n)
   createdAt: timestamp('created_at').notNull(),
+});
+
+// Long-lived sign-in sessions. The client holds '<id>.<secret>' as its refresh token; only a
+// sha256 of the secret is stored, so a database leak can't be replayed as sessions.
+export const authSessions = pgTable('auth_sessions', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  tokenHash: text('token_hash').notNull(),
+  createdAt: timestamp('created_at').notNull(),
+  lastUsedAt: timestamp('last_used_at').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  revokedAt: timestamp('revoked_at'),
 });
 
 export const promoCodes = pgTable('promo_codes', {

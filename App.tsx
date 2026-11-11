@@ -11,7 +11,7 @@ import Profile from './components/Profile';
 import VehicleView from './components/VehicleView';
 import EditTransaction from './components/EditTransaction';
 import VoiceEntry from './components/VoiceEntry';
-import BiometricAuth from './components/BiometricAuth';
+import AuthScreen from './components/AuthScreen';
 import QuickAddModal from './components/QuickAddModal';
 import ReceiptProcessor from './components/ReceiptProcessor';
 import ToastContainer from './components/ToastContainer';
@@ -71,7 +71,7 @@ const AppContainer: React.FC = () => (
 );
 
 const App: React.FC = () => {
-    const { currentUser, users, business, isPersonalMode, activeBusinessId, checkLimit, incrementUsage, hasFeature } = useAuth();
+    const { currentUser, users, business, isPersonalMode, activeBusinessId, checkLimit, incrementUsage, hasFeature, authStatus } = useAuth();
     const { addToast } = useNotification();
     const { t, language, setLanguage, isRTL } = useLanguage();
     const { findCategoryByName } = useCategories();
@@ -545,10 +545,14 @@ const App: React.FC = () => {
     }
 
     if (!currentUser) {
+        // Still restoring a saved session: show nothing rather than flashing the sign-in form.
+        if (authStatus === 'loading') {
+            return <div className="fixed inset-0 bg-[var(--bg-primary)]" />;
+        }
         return (
             <>
                 <ToastContainer />
-                <BiometricAuth />
+                <AuthScreen />
             </>
         );
     }

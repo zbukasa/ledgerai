@@ -22,9 +22,12 @@ import { useNotification } from '../contexts/NotificationContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import LegalScreen from './LegalScreen';
+import { TwoFactorSetupModal } from './SecuritySettings';
+import { authFetch } from '../services/apiService';
 
 const BankConnectivity: React.FC = () => {
-    const { hasFeature } = useAuth();
+    const { hasFeature, account } = useAuth();
+    const [mfaStep, setMfaStep] = useState<'prompt' | 'setup' | null>(null);
     const [connections, setConnections] = useState<BankConnection[]>([]);
     const [loading, setLoading] = useState(true);
     const [syncingId, setSyncingId] = useState<string | null>(null);
@@ -62,10 +65,7 @@ const BankConnectivity: React.FC = () => {
 
     const fetchConnections = async () => {
         try {
-            const token = localStorage.getItem('auth_token');
-            const res = await fetch('/bank/connections', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await authFetch('/bank/connections');
             if (res.ok) {
                 const data = await res.json();
                 setConnections(data);
@@ -79,10 +79,7 @@ const BankConnectivity: React.FC = () => {
 
     const fetchAccounts = async (connectionId: string) => {
         try {
-            const token = localStorage.getItem('auth_token');
-            const res = await fetch(`/bank/connections/${connectionId}/accounts`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const res = await authFetch(`/bank/connections/${connectionId}/accounts`);
             if (res.ok) {
                 const data = await res.json();
                 setAccounts(data);
@@ -105,15 +102,18 @@ const BankConnectivity: React.FC = () => {
     }, [selectedConnection]);
 
     const handleAddConnection = async () => {
+        // Bank access requires two-factor sign-in (also enforced by the server).
+        if (!account?.mfaEnabled) {
+            setMfaStep('prompt');
+            return;
+        }
         // Mocking the Plaid/Bank Link flow
         addToast(t('bank.initializing'), "info");
         
         try {
-            const token = localStorage.getItem('auth_token');
             // 1. Get link token
-            const ltRes = await fetch('/bank/link-token', {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${token}` }
+            const ltRes = await authFetch('/bank/link-token', {
+                method: 'POST'
             });
             const { link_token } = await ltRes.json();
             
@@ -122,10 +122,9 @@ const BankConnectivity: React.FC = () => {
             const public_token = `public-mock-${Math.random().toString(36).substring(7)}`;
             
             // 3. Exchange public token
-            const exRes = await fetch('/bank/exchange-token', {
+            const exRes = await authFetch('/bank/exchange-token', {
                 method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
+                headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ public_token })
@@ -143,11 +142,9 @@ const BankConnectivity: React.FC = () => {
     const handleSync = async (connectionId: string) => {
         setSyncingId(connectionId);
         try {
-            const token = localStorage.getItem('auth_token');
-            const res = await fetch('/bank/sync', {
+            const res = await authFetch('/bank/sync', {
                 method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
+                headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ connection_id: connectionId })
@@ -169,11 +166,9 @@ const BankConnectivity: React.FC = () => {
     const handlePushToLedger = async (connectionId: string) => {
         setPushingId(connectionId);
         try {
-            const token = localStorage.getItem('auth_token');
-            const res = await fetch('/bank/push-to-ledger', {
+            const res = await authFetch('/bank/push-to-ledger', {
                 method: 'POST',
-                headers: { 
-                    'Authorization': `Bearer ${token}`,
+                headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ connection_id: connectionId })
@@ -197,10 +192,8 @@ const BankConnectivity: React.FC = () => {
         if (!disconnectTarget) return;
         setDisconnecting(true);
         try {
-            const token = localStorage.getItem('auth_token');
-            const res = await fetch(`/bank/connections/${disconnectTarget}?purgeLedger=${purgeLedger}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${token}` }
+            const res = await authFetch(`/bank/connections/${disconnectTarget}?purgeLedger=${purgeLedger}`, {
+                method: 'DELETE'
             });
             if (res.ok) {
                 addToast(t('bank.disconnected'), "success");
@@ -426,6 +419,54 @@ const BankConnectivity: React.FC = () => {
             </AnimatePresence>
 
             <AnimatePresence>
+                {mfaStep === 'setup' && (
+                    <TwoFactorSetupModal onClose={() => setMfaStep(null)} />
+                )}
+                {mfaStep === 'prompt' && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+                        onClick={() => setMfaStep(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.95 }}
+                            role="dialog"
+                            aria-modal="true"
+                            className="w-full max-w-md bg-[var(--bg-secondary)] border border-[var(--border-primary-translucent)] rounded-2xl p-6 space-y-4"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="p-2.5 rounded-full bg-[var(--bg-tertiary)] text-[var(--accent-primary-light)]">
+                                    <ShieldCheck size={22} />
+                                </div>
+                                <h3 className="font-bold text-lg">{t('bank.mfaRequiredTitle')}</h3>
+                            </div>
+                            <p className="text-sm text-[var(--text-secondary)]">
+                                {account ? t('bank.mfaRequiredBody') : t('security.offline')}
+                            </p>
+                            <div className="flex justify-end gap-2 pt-2">
+                                <button
+                                    onClick={() => setMfaStep(null)}
+                                    className="px-4 py-2 rounded-xl text-sm font-bold hover:bg-[var(--bg-tertiary)]"
+                                >
+                                    {t('bank.cancel')}
+                                </button>
+                                {account && (
+                                    <button
+                                        onClick={() => setMfaStep('setup')}
+                                        className="px-4 py-2 rounded-xl text-sm font-bold bg-[var(--accent-primary)] text-white hover:opacity-90"
+                                    >
+                                        {t('bank.mfaSetup')}
+                                    </button>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
                 {disconnectTarget && (
                     <motion.div
                         initial={{ opacity: 0 }}

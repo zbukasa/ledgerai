@@ -39,7 +39,7 @@ We use Plaid, Inc. ("Plaid") to connect your bank accounts. By using our service
 We protect your data with the following safeguards:
 - **Encryption in Transit:** All communication between the app, our servers and our service providers uses TLS 1.2 or higher.
 - **Encryption at Rest:** Our database, hosted by Supabase, is encrypted at rest with AES-256. Bank access tokens are additionally encrypted by our application before they are stored, and are never sent to your device.
-- **Account Security:** Passwords are stored only as salted bcrypt hashes, never in readable form. Login attempts are rate-limited to block password-guessing attacks.
+- **Account Security:** Passwords are stored only as salted bcrypt hashes, never in readable form. Login attempts are rate-limited to block password-guessing attacks. You can turn on two-factor authentication with an authenticator app, and it is required before you connect a bank.
 - **Data Isolation:** Every request for financial data is checked against the signed-in account, so each user can only access their own data.
 - **Access Control:** Access to production systems is limited to authorized personnel on a least-privilege basis and requires multi-factor authentication.
 
@@ -111,7 +111,7 @@ Nous utilisons Plaid, Inc. (« Plaid ») pour connecter vos comptes bancaires. E
 Nous protégeons vos données grâce aux mesures suivantes :
 - **Cryptage en transit :** Toutes les communications entre l'application, nos serveurs et nos prestataires de services utilisent TLS 1.2 ou supérieur.
 - **Cryptage au repos :** Notre base de données, hébergée par Supabase, est cryptée au repos avec AES-256. Les jetons d'accès bancaires sont en outre cryptés par notre application avant d'être stockés, et ne sont jamais envoyés à votre appareil.
-- **Sécurité du compte :** Les mots de passe sont stockés uniquement sous forme de hachages bcrypt salés, jamais sous forme lisible. Les tentatives de connexion sont limitées pour bloquer les attaques par devinette de mot de passe.
+- **Sécurité du compte :** Les mots de passe sont stockés uniquement sous forme de hachages bcrypt salés, jamais sous forme lisible. Les tentatives de connexion sont limitées pour bloquer les attaques par devinette de mot de passe. Vous pouvez activer l'authentification à deux facteurs avec une application d'authentification ; elle est obligatoire avant de connecter une banque.
 - **Isolation des données :** Chaque demande de données financières est vérifiée par rapport au compte connecté, de sorte que chaque utilisateur ne peut accéder qu'à ses propres données.
 - **Contrôle d'accès :** L'accès aux systèmes de production est limité au personnel autorisé selon le principe du moindre privilège et nécessite une authentification multifacteur.
 
@@ -183,7 +183,7 @@ Utilizamos Plaid, Inc. ("Plaid") para conectar sus cuentas bancarias. Al utiliza
 Protegemos sus datos con las siguientes medidas:
 - **Cifrado en tránsito:** Toda la comunicación entre la aplicación, nuestros servidores y nuestros proveedores de servicios utiliza TLS 1.2 o superior.
 - **Cifrado en reposo:** Nuestra base de datos, alojada por Supabase, está cifrada en reposo con AES-256. Los tokens de acceso bancario se cifran además en nuestra aplicación antes de almacenarse y nunca se envían a su dispositivo.
-- **Seguridad de la cuenta:** Las contraseñas se almacenan únicamente como hashes bcrypt con sal, nunca en forma legible. Los intentos de inicio de sesión están limitados para bloquear ataques de adivinación de contraseñas.
+- **Seguridad de la cuenta:** Las contraseñas se almacenan únicamente como hashes bcrypt con sal, nunca en forma legible. Los intentos de inicio de sesión están limitados para bloquear ataques de adivinación de contraseñas. Puede activar la autenticación de dos factores con una aplicación de autenticación, y es obligatoria antes de conectar un banco.
 - **Aislamiento de datos:** Cada solicitud de datos financieros se verifica contra la cuenta que ha iniciado sesión, de modo que cada usuario solo puede acceder a sus propios datos.
 - **Control de acceso:** El acceso a los sistemas de producción está limitado al personal autorizado según el principio de menor privilegio y requiere autenticación multifactor.
 
@@ -255,7 +255,7 @@ Usamos a Plaid, Inc. ("Plaid") para conectar suas contas bancárias. Ao usar nos
 Protegemos seus dados com as seguintes salvaguardas:
 - **Criptografia em Trânsito:** Toda a comunicação entre o aplicativo, nossos servidores e nossos provedores de serviços usa TLS 1.2 ou superior.
 - **Criptografia em Repouso:** Nosso banco de dados, hospedado pela Supabase, é criptografado em repouso com AES-256. Os tokens de acesso bancário são criptografados adicionalmente pelo nosso aplicativo antes de serem armazenados e nunca são enviados ao seu dispositivo.
-- **Segurança da Conta:** As senhas são armazenadas apenas como hashes bcrypt com salt, nunca em formato legível. As tentativas de login têm limite de taxa para bloquear ataques de adivinhação de senha.
+- **Segurança da Conta:** As senhas são armazenadas apenas como hashes bcrypt com salt, nunca em formato legível. As tentativas de login têm limite de taxa para bloquear ataques de adivinhação de senha. Você pode ativar a autenticação de dois fatores com um aplicativo autenticador, e ela é obrigatória antes de conectar um banco.
 - **Isolamento de Dados:** Cada solicitação de dados financeiros é verificada em relação à conta conectada, de modo que cada usuário só pode acessar seus próprios dados.
 - **Controle de Acesso:** O acesso aos sistemas de produção é limitado a pessoal autorizado com base no princípio do menor privilégio e exige autenticação multifator.
 
@@ -531,7 +531,7 @@ This policy explains what data LedgerAI keeps, how long we keep it and how it is
 ## 4. Deletion
 - **Account Deletion:** You can delete your account from the app or by emailing **tradelab.mantis@gmail.com**. Your account, ledger and bank data are permanently deleted from our production database immediately, and our access to your linked banks is revoked with Plaid. Copies in encrypted backups expire within 30 days.
 - **Bank Disconnection:** Disconnecting a bank revokes our access with Plaid and immediately deletes the accounts, balances and transactions retrieved from it. You can choose to also remove the transactions you imported into your ledger from that bank.
-- **Data on Your Device:** LedgerAI keeps a working copy of your ledger on your device so it works offline. Uninstalling the app removes this copy.
+- **Data on Your Device:** LedgerAI keeps a working copy of your ledger on your device so it works offline. Deleting your account in the app also erases this copy, and uninstalling the app removes it.
 
 ## 5. Security Controls
 - **Encryption:** TLS 1.2 or higher in transit; AES-256 at rest in our database. Bank access tokens are additionally encrypted by our application.
@@ -565,7 +565,7 @@ Cette politique explique quelles données LedgerAI conserve, combien de temps no
 ## 4. Suppression
 - **Suppression du compte :** Vous pouvez supprimer votre compte depuis l'application ou en écrivant à **tradelab.mantis@gmail.com**. Votre compte, votre registre et vos données bancaires sont immédiatement et définitivement supprimés de notre base de données de production, et notre accès à vos banques liées est révoqué auprès de Plaid. Les copies dans les sauvegardes cryptées expirent dans un délai de 30 jours.
 - **Déconnexion bancaire :** La déconnexion d'une banque révoque notre accès auprès de Plaid et supprime immédiatement les comptes, soldes et transactions récupérés auprès de celle-ci. Vous pouvez également choisir de supprimer les transactions que vous avez importées dans votre registre depuis cette banque.
-- **Données sur votre appareil :** LedgerAI conserve une copie de travail de votre registre sur votre appareil afin de fonctionner hors ligne. La désinstallation de l'application supprime cette copie.
+- **Données sur votre appareil :** LedgerAI conserve une copie de travail de votre registre sur votre appareil afin de fonctionner hors ligne. La suppression de votre compte dans l'application efface aussi cette copie, et la désinstallation de l'application la supprime.
 
 ## 5. Contrôles de sécurité
 - **Cryptage :** TLS 1.2 ou supérieur en transit ; AES-256 au repos dans notre base de données. Les jetons d'accès bancaires sont en outre cryptés par notre application.
@@ -599,7 +599,7 @@ Esta política explica qué datos conserva LedgerAI, durante cuánto tiempo los 
 ## 4. Eliminación
 - **Eliminación de la cuenta:** Puede eliminar su cuenta desde la aplicación o escribiendo a **tradelab.mantis@gmail.com**. Su cuenta, su libro contable y sus datos bancarios se eliminan de forma inmediata y permanente de nuestra base de datos de producción, y nuestro acceso a sus bancos vinculados se revoca ante Plaid. Las copias en las copias de seguridad cifradas caducan en un plazo de 30 días.
 - **Desconexión bancaria:** Desconectar un banco revoca nuestro acceso ante Plaid y elimina de inmediato las cuentas, saldos y transacciones obtenidos de él. También puede optar por eliminar las transacciones que importó a su libro contable desde ese banco.
-- **Datos en su dispositivo:** LedgerAI guarda una copia de trabajo de su libro contable en su dispositivo para que funcione sin conexión. Desinstalar la aplicación elimina esta copia.
+- **Datos en su dispositivo:** LedgerAI guarda una copia de trabajo de su libro contable en su dispositivo para que funcione sin conexión. Eliminar su cuenta en la aplicación también borra esta copia, y desinstalar la aplicación la elimina.
 
 ## 5. Controles de seguridad
 - **Cifrado:** TLS 1.2 o superior en tránsito; AES-256 en reposo en nuestra base de datos. Los tokens de acceso bancario se cifran además en nuestra aplicación.
@@ -633,7 +633,7 @@ Esta política explica quais dados o LedgerAI mantém, por quanto tempo os mante
 ## 4. Exclusão
 - **Exclusão da Conta:** Você pode excluir sua conta pelo aplicativo ou enviando um e-mail para **tradelab.mantis@gmail.com**. Sua conta, seu livro-razão e seus dados bancários são excluídos imediata e permanentemente do nosso banco de dados de produção, e nosso acesso aos seus bancos vinculados é revogado junto à Plaid. As cópias em backups criptografados expiram em até 30 dias.
 - **Desconexão Bancária:** Desconectar um banco revoga nosso acesso junto à Plaid e exclui imediatamente as contas, saldos e transações obtidos dele. Você também pode optar por remover as transações que importou para o seu livro-razão a partir desse banco.
-- **Dados no Seu Dispositivo:** O LedgerAI mantém uma cópia de trabalho do seu livro-razão no seu dispositivo para funcionar offline. Desinstalar o aplicativo remove essa cópia.
+- **Dados no Seu Dispositivo:** O LedgerAI mantém uma cópia de trabalho do seu livro-razão no seu dispositivo para funcionar offline. Excluir sua conta no aplicativo também apaga essa cópia, e desinstalar o aplicativo a remove.
 
 ## 5. Controles de Segurança
 - **Criptografia:** TLS 1.2 ou superior em trânsito; AES-256 em repouso em nosso banco de dados. Os tokens de acesso bancário são criptografados adicionalmente pelo nosso aplicativo.
@@ -679,7 +679,7 @@ export const PRIVACY_POLICY_HI = `
 हम निम्नलिखित सुरक्षा उपायों से आपके डेटा की रक्षा करते हैं:
 - **एन्क्रिप्शन इन ट्रांजिट:** एप्लिकेशन, हमारे सर्वर और हमारे सेवा प्रदाताओं के बीच सभी संचार टीएलएस 1.2 या उच्चतर का उपयोग करते हैं।
 - **एन्क्रिप्शन एट रेस्ट:** Supabase द्वारा होस्ट किया गया हमारा डेटाबेस एईएस-256 के साथ एट रेस्ट एन्क्रिप्टेड है। बैंक एक्सेस टोकन को संग्रहीत करने से पहले हमारे एप्लिकेशन द्वारा अतिरिक्त रूप से एन्क्रिप्ट किया जाता है, और उन्हें कभी भी आपके डिवाइस पर नहीं भेजा जाता है।
-- **खाता सुरक्षा:** पासवर्ड केवल सॉल्टेड bcrypt हैश के रूप में संग्रहीत किए जाते हैं, कभी भी पढ़ने योग्य रूप में नहीं। पासवर्ड-अनुमान हमलों को रोकने के लिए लॉगिन प्रयासों की दर सीमित है।
+- **खाता सुरक्षा:** पासवर्ड केवल सॉल्टेड bcrypt हैश के रूप में संग्रहीत किए जाते हैं, कभी भी पढ़ने योग्य रूप में नहीं। पासवर्ड-अनुमान हमलों को रोकने के लिए लॉगिन प्रयासों की दर सीमित है। आप ऑथेंटिकेटर ऐप से दो-चरणीय प्रमाणीकरण चालू कर सकते हैं, और बैंक जोड़ने से पहले यह अनिवार्य है।
 - **डेटा पृथक्करण:** वित्तीय डेटा के प्रत्येक अनुरोध की जाँच साइन-इन किए गए खाते के विरुद्ध की जाती है, ताकि प्रत्येक उपयोगकर्ता केवल अपने स्वयं के डेटा तक पहुँच सके।
 - **पहुंच नियंत्रण:** उत्पादन सिस्टम तक पहुंच न्यूनतम विशेषाधिकार के आधार पर केवल अधिकृत कर्मियों तक सीमित है और इसके लिए मल्टी-फैक्टर ऑथेंटिकेशन आवश्यक है।
 
@@ -751,7 +751,7 @@ export const PRIVACY_POLICY_AR = `
 نحمي بياناتك من خلال الضمانات التالية:
 - **التشفير أثناء النقل:** تستخدم جميع الاتصالات بين التطبيق وخوادمنا ومزودي الخدمة لدينا بروتوكول TLS 1.2 أو أعلى.
 - **التشفير عند السكون:** قاعدة بياناتنا، المستضافة لدى Supabase، مشفرة عند السكون باستخدام AES-256. كما يتم تشفير رموز الوصول المصرفية بشكل إضافي بواسطة تطبيقنا قبل تخزينها، ولا يتم إرسالها أبدًا إلى جهازك.
-- **أمان الحساب:** يتم تخزين كلمات المرور فقط كتجزئات bcrypt مملحة، وليس بصيغة قابلة للقراءة أبدًا. ويتم تحديد معدل محاولات تسجيل الدخول لمنع هجمات تخمين كلمات المرور.
+- **أمان الحساب:** يتم تخزين كلمات المرور فقط كتجزئات bcrypt مملحة، وليس بصيغة قابلة للقراءة أبدًا. ويتم تحديد معدل محاولات تسجيل الدخول لمنع هجمات تخمين كلمات المرور. يمكنك تفعيل المصادقة الثنائية باستخدام تطبيق مصادقة، وهي إلزامية قبل ربط أي بنك.
 - **عزل البيانات:** يتم التحقق من كل طلب للبيانات المالية مقابل الحساب المسجل دخوله، بحيث لا يتمكن كل مستخدم إلا من الوصول إلى بياناته الخاصة.
 - **التحكم في الوصول:** يقتصر الوصول إلى أنظمة الإنتاج على الموظفين المصرح لهم وفق مبدأ الامتياز الأقل، ويتطلب المصادقة متعددة العوامل.
 
@@ -919,7 +919,7 @@ export const DATA_RETENTION_POLICY_HI = `
 ## 4. विलोपन
 - **खाता हटाना:** आप ऐप से या **tradelab.mantis@gmail.com** पर ईमेल करके अपना खाता हटा सकते हैं। आपका खाता, लेजर और बैंक डेटा हमारे उत्पादन डेटाबेस से तुरंत और स्थायी रूप से हटा दिया जाता है, और आपके लिंक किए गए बैंकों तक हमारी पहुंच प्लैड के साथ रद्द कर दी जाती है। एन्क्रिप्टेड बैकअप में मौजूद प्रतियां 30 दिनों के भीतर समाप्त हो जाती हैं।
 - **बैंक डिस्कनेक्शन:** किसी बैंक को डिस्कनेक्ट करने से प्लैड के साथ हमारी पहुंच रद्द हो जाती है और उससे प्राप्त खाते, शेष राशियां और लेनदेन तुरंत हटा दिए जाते हैं। आप उस बैंक से अपने लेजर में आयात किए गए लेनदेन को भी हटाने का विकल्प चुन सकते हैं।
-- **आपके डिवाइस पर डेटा:** LedgerAI ऑफ़लाइन काम करने के लिए आपके डिवाइस पर आपके लेजर की एक कार्यशील प्रति रखता है। ऐप को अनइंस्टॉल करने से यह प्रति हट जाती है।
+- **आपके डिवाइस पर डेटा:** LedgerAI ऑफ़लाइन काम करने के लिए आपके डिवाइस पर आपके लेजर की एक कार्यशील प्रति रखता है। ऐप में अपना खाता हटाने से यह प्रति भी मिट जाती है, और ऐप को अनइंस्टॉल करने से यह हट जाती है।
 
 ## 5. सुरक्षा नियंत्रण
 - **एन्क्रिप्शन:** ट्रांजिट में टीएलएस 1.2 या उच्चतर; हमारे डेटाबेस में एट रेस्ट एईएस-256। बैंक एक्सेस टोकन हमारे एप्लिकेशन द्वारा अतिरिक्त रूप से एन्क्रिप्ट किए जाते हैं।
@@ -953,7 +953,7 @@ export const DATA_RETENTION_POLICY_AR = `
 ## 4. الحذف
 - **حذف الحساب:** يمكنك حذف حسابك من التطبيق أو بمراسلتنا على **tradelab.mantis@gmail.com**. يتم حذف حسابك ودفتر الأستاذ والبيانات المصرفية نهائيًا وفورًا من قاعدة بيانات الإنتاج لدينا، ويتم إلغاء وصولنا إلى بنوكك المرتبطة لدى Plaid. وتنتهي صلاحية النسخ الموجودة في النسخ الاحتياطية المشفرة في غضون 30 يومًا.
 - **فصل البنك:** يؤدي فصل أحد البنوك إلى إلغاء وصولنا لدى Plaid وحذف الحسابات والأرصدة والمعاملات المسترجعة منه فورًا. ويمكنك أيضًا اختيار إزالة المعاملات التي استوردتها إلى دفتر الأستاذ من ذلك البنك.
-- **البيانات على جهازك:** يحتفظ LedgerAI بنسخة عمل من دفتر الأستاذ الخاص بك على جهازك حتى يعمل دون اتصال بالإنترنت. وتؤدي إزالة تثبيت التطبيق إلى حذف هذه النسخة.
+- **البيانات على جهازك:** يحتفظ LedgerAI بنسخة عمل من دفتر الأستاذ الخاص بك على جهازك حتى يعمل دون اتصال بالإنترنت. ويؤدي حذف حسابك في التطبيق أيضًا إلى مسح هذه النسخة، كما تؤدي إزالة تثبيت التطبيق إلى حذفها.
 
 ## 5. الضوابط الأمنية
 - **التشفير:** TLS 1.2 أو أعلى أثناء النقل؛ وAES-256 عند السكون في قاعدة بياناتنا. كما يتم تشفير رموز الوصول المصرفية بشكل إضافي بواسطة تطبيقنا.

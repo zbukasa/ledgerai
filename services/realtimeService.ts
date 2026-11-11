@@ -1,5 +1,6 @@
 
 import { io, Socket } from 'socket.io-client';
+import { apiService } from './apiService';
 
 class RealtimeService {
     private socket: Socket | null = null;
@@ -13,7 +14,11 @@ class RealtimeService {
         }
 
         this.businessId = businessId;
-        this.socket = io(window.location.origin);
+        // The server rejects sockets without a valid access token. The callback form makes
+        // reconnects pick up the latest (refreshed) token.
+        this.socket = io(window.location.origin, {
+            auth: (cb) => cb({ token: apiService.auth.getAccessToken() }),
+        });
 
         this.socket.on('connect', () => {
             console.log('Connected to realtime server');

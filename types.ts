@@ -53,6 +53,7 @@ export interface User {
     hasUsedTrial?: boolean; // Explicit flag to prevent multiple trials
     distanceUnit?: DistanceUnit;
     hasAcceptedTerms?: boolean;
+    accountLinked?: boolean; // profile is signed in to a server account with the same id
     // Promo system fields
     promoIsActive?: boolean;
     promoCode?: string;

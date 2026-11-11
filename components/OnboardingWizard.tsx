@@ -11,6 +11,7 @@ import { blobToBase64 } from '../utils/helpers';
 import CameraCapture from './CameraCapture';
 import Logo from './Logo';
 import LegalScreen from './LegalScreen';
+import { useAuthErrorMessage } from './AuthScreen';
 
 interface OnboardingWizardProps {
     onComplete: () => void;
@@ -26,7 +27,8 @@ const steps = [
 const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
     const [currentStep, setCurrentStep] = useState(0);
     const { setLanguage, confirmLanguageSelection, t } = useLanguage();
-    const { addUser, login, updateBusiness, joinBusiness, createBusiness } = useAuth();
+    const { currentUser, signUp, updateBusiness, joinBusiness, createBusiness } = useAuth();
+    const authErrorMessage = useAuthErrorMessage();
     const { preferredCurrency, setPreferredCurrency, allCurrencies } = useCurrency();
 
     // Step 1 Data
@@ -34,8 +36,11 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
 
     // Step 2 Data
     const [name, setName] = useState('');
-    const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [profileError, setProfileError] = useState<string | null>(null);
+    const [creatingAccount, setCreatingAccount] = useState(false);
     const [phone, setPhone] = useState('');
     const [role, setRole] = useState<'Admin' | 'Manager'>('Admin');
     const [avatarBase64, setAvatarBase64] = useState<string | null>(null);
@@ -60,13 +65,34 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
         setCurrentStep(1);
     };
 
-    const handleProfileConfirm = () => {
-        if (!name.trim() || !username.trim()) return;
+    // Creates the account here (not at the end) so problems like an email that's already
+    // registered show up on the step where they can be fixed.
+    const handleProfileConfirm = async () => {
+        if (!name.trim() || !email.trim()) return;
         if (!hasAcceptedTerms) {
             alert("Please accept the Terms of Service and Privacy Policy to continue.");
             return;
         }
-        setCurrentStep(2);
+        if (password.length < 8) return setProfileError(t('auth.passwordTooShort'));
+        if (password !== confirmPassword) return setProfileError(t('auth.passwordMismatch'));
+
+        setCreatingAccount(true);
+        setProfileError(null);
+        try {
+            await signUp(name, email, password, undefined, {
+                role,
+                phone: phone || undefined,
+                avatarUrl: avatarBase64 ? `data:image/jpeg;base64,${avatarBase64}` : undefined,
+                hasAcceptedTerms: true,
+            });
+            setPassword('');
+            setConfirmPassword('');
+            setCurrentStep(2);
+        } catch (e) {
+            setProfileError(authErrorMessage(e, 'signUp'));
+        } finally {
+            setCreatingAccount(false);
+        }
     };
 
     const handleOrgConfirm = async () => {
@@ -98,26 +124,9 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
     };
 
     const handleComplete = async () => {
-        const userId = uuidv4();
-        const finalAvatarUrl = avatarBase64 
-            ? `data:image/jpeg;base64,${avatarBase64}` 
-            : `https://i.pravatar.cc/150?u=${userId}`;
-
-        const newUser = {
-            id: userId,
-            name,
-            role,
-            email: email || undefined,
-            phone: phone || undefined,
-            avatarUrl: finalAvatarUrl,
-            hasAcceptedTerms: true
-        };
-        
-        // Use Context to add user, ensuring state updates immediately
-        addUser(newUser);
-        
-        // Log in the new user - pass full object to handle immediate login before state propagation
-        login(newUser); 
+        // The account and profile were created at the profile step.
+        if (!currentUser) return;
+        const userId = currentUser.id;
 
         // Handle Business/Organization creation if in create mode
         if (orgMode === 'create') {
@@ -258,22 +267,12 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
                                     />
                                 </div>
                                 
-                                <div className="group">
-                                    <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-2 ml-1">Username</label>
-                                    <input 
-                                        type="text" 
-                                        value={username}
-                                        onChange={(e) => setUsername(e.target.value)}
-                                        className="w-full bg-[var(--bg-secondary)] text-[var(--text-primary)] p-4 rounded-xl border border-transparent focus:border-[var(--accent-primary)] outline-none transition-all placeholder:text-[var(--text-tertiary)]"
-                                        placeholder="e.g. jean_m"
-                                    />
-                                </div>
-
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="group">
-                                        <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-2 ml-1">Email</label>
+                                        <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-2 ml-1">{t('auth.email')}</label>
                                         <input 
                                             type="email" 
+                                            autoComplete="email"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             className="w-full bg-[var(--bg-secondary)] text-[var(--text-primary)] p-4 rounded-xl border border-transparent focus:border-[var(--accent-primary)] outline-none transition-all placeholder:text-[var(--text-tertiary)]"
@@ -288,6 +287,32 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
                                             onChange={(e) => setPhone(e.target.value)}
                                             className="w-full bg-[var(--bg-secondary)] text-[var(--text-primary)] p-4 rounded-xl border border-transparent focus:border-[var(--accent-primary)] outline-none transition-all placeholder:text-[var(--text-tertiary)]"
                                             placeholder="+243 ..."
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="group">
+                                        <label htmlFor="onboarding-password" className="block text-sm font-semibold text-[var(--text-secondary)] mb-2 ml-1">{t('auth.password')}</label>
+                                        <input
+                                            id="onboarding-password"
+                                            type="password"
+                                            autoComplete="new-password"
+                                            value={password}
+                                            onChange={(e) => setPassword(e.target.value)}
+                                            className="w-full bg-[var(--bg-secondary)] text-[var(--text-primary)] p-4 rounded-xl border border-transparent focus:border-[var(--accent-primary)] outline-none transition-all placeholder:text-[var(--text-tertiary)]"
+                                            placeholder={t('auth.passwordHint')}
+                                        />
+                                    </div>
+                                    <div className="group">
+                                        <label htmlFor="onboarding-confirm-password" className="block text-sm font-semibold text-[var(--text-secondary)] mb-2 ml-1">{t('auth.confirmPassword')}</label>
+                                        <input
+                                            id="onboarding-confirm-password"
+                                            type="password"
+                                            autoComplete="new-password"
+                                            value={confirmPassword}
+                                            onChange={(e) => setConfirmPassword(e.target.value)}
+                                            className="w-full bg-[var(--bg-secondary)] text-[var(--text-primary)] p-4 rounded-xl border border-transparent focus:border-[var(--accent-primary)] outline-none transition-all placeholder:text-[var(--text-tertiary)]"
                                         />
                                     </div>
                                 </div>
@@ -327,9 +352,14 @@ const OnboardingWizard: React.FC<OnboardingWizardProps> = ({ onComplete }) => {
                             <div className="pt-4">
                                 <PrimaryButton 
                                     onClick={handleProfileConfirm} 
-                                    disabled={!name || !username || !hasAcceptedTerms} 
-                                    label="Next Step" 
+                                    disabled={!name || !email || !password || !confirmPassword || !hasAcceptedTerms || creatingAccount}
+                                    label="Next Step"
                                 />
+                                {profileError && <p role="alert" className="mt-3 text-sm text-red-500">{profileError}</p>}
+                                <p className="mt-4 text-sm text-[var(--text-secondary)]">
+                                    {t('auth.haveAccount')}{' '}
+                                    <button onClick={onComplete} className="text-[var(--accent-primary)] font-bold hover:underline">{t('auth.signIn')}</button>
+                                </p>
                             </div>
                         </div>
                     )}

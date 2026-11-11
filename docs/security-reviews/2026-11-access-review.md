@@ -1,6 +1,6 @@
 # Access review: November 2026
 
-**Reviewer:** [Name], Security Lead
+**Reviewer:** Zenas Bukasa, Security Lead
 **Date:** 2026-11-10
 **Policy:** `docs/INFORMATION_SECURITY_POLICY.md` §5 and §10
 

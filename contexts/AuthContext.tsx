@@ -1,11 +1,25 @@
 
-import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo, useRef } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 import { User, Business, UserRole, SubscriptionTier, UsageStats, Feature } from '../types';
 import { getBusiness, getUsers, saveBusiness as saveBusinessToStorage, saveUsers as saveUsersToStorage, defaultBusiness, defaultUsers } from '../services/storageService';
+import { db } from '../services/syncService';
 import { useNotification } from './NotificationContext';
 import { useLanguage } from './LanguageContext';
-import { apiService } from '../services/apiService';
+import { apiService, AccountInfo, AUTH_EXPIRED_EVENT, SignInResult } from '../services/apiService';
+
+const CURRENT_USER_KEY = 'currentUserId';
+const ACCOUNT_KEY = 'accountInfo';
+
+export type AuthStatus = 'loading' | 'signedOut' | 'signedIn';
+
+const readCachedAccount = (): AccountInfo | null => {
+    try {
+        return JSON.parse(localStorage.getItem(ACCOUNT_KEY) || 'null');
+    } catch {
+        return null;
+    }
+};
 
 interface AuthContextType {
     currentUser: User | null;
@@ -14,8 +28,16 @@ interface AuthContextType {
     isPersonalMode: boolean;
     activeBusinessId: string | null;
     setPersonalMode: (isPersonal: boolean) => void;
-    login: (userOrId: string | User) => void;
-    logout: () => void;
+    /** Server account for the signed-in profile (cached copy while offline). */
+    account: AccountInfo | null;
+    authStatus: AuthStatus;
+    signIn: (email: string, password: string) => Promise<SignInResult>;
+    verifyMfa: (mfaToken: string, code: string) => Promise<void>;
+    /** Create an account; `profileId` attaches it to a profile already on this device. */
+    signUp: (name: string, email: string, password: string, profileId?: string, profile?: Partial<User>) => Promise<User>;
+    refreshAccount: () => Promise<void>;
+    deleteAccount: (password: string, code?: string) => Promise<void>;
+    logout: () => Promise<void>;
     updateUser: (userId: string, data: Partial<User>) => void;
     addUser: (userOrName: string | User, role?: UserRole) => void;
     deleteUser: (userId: string) => void;
@@ -40,6 +62,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [currentUser, setCurrentUser] = useState<User | null>(null);
     const [users, setUsers] = useState<User[]>([]);
+    const usersRef = useRef<User[]>([]);
+    const [account, setAccount] = useState<AccountInfo | null>(null);
+    const [authStatus, setAuthStatus] = useState<AuthStatus>('loading');
     const [business, setBusiness] = useState<Business | null>(null);
     const [isPersonalMode, setIsPersonalMode] = useState<boolean>(() => {
         return localStorage.getItem('isPersonalMode') === 'true';
@@ -120,18 +145,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
             // Load users
             const loadedUsers = await getUsers() || defaultUsers;
+            usersRef.current = loadedUsers;
             setUsers(loadedUsers);
 
-            // Check for a logged-in user session
-            const sessionUserId = sessionStorage.getItem('currentUserId');
-            if (sessionUserId) {
-                const user = loadedUsers.find((u: User) => u.id === sessionUserId);
-                if(user) {
+            // Restore the signed-in session. Offline (or server unreachable), a device that was
+            // signed in keeps working on its local data until the server can be reached.
+            if (!apiService.auth.hasSession()) {
+                setAuthStatus('signedOut');
+                return;
+            }
+            try {
+                const restored = await apiService.auth.refresh();
+                if (restored) {
+                    await completeSession(restored);
+                } else {
+                    endSession();
+                }
+            } catch {
+                const storedId = localStorage.getItem(CURRENT_USER_KEY);
+                const user = loadedUsers.find((u: User) => u.id === storedId);
+                if (user) {
                     setCurrentUser(user);
-                    // Ensure backend token is present
-                    if (!apiService.auth.isAuthenticated()) {
-                        apiService.auth.login(user.name, 'password').catch(console.error);
-                    }
+                    setAccount(readCachedAccount());
+                    setAuthStatus('signedIn');
+                } else {
+                    setAuthStatus('signedOut');
                 }
             }
         };
@@ -140,6 +178,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     const saveUsers = async (newUsers: User[]) => {
+        usersRef.current = newUsers;
         setUsers(newUsers);
         await saveUsersToStorage(newUsers);
     };
@@ -149,28 +188,92 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         await saveBusinessToStorage(newBusiness);
     }
 
-    const login = (userOrId: string | User) => {
-        let userToLogin: User | undefined;
-
-        if (typeof userOrId === 'string') {
-            userToLogin = users.find(u => u.id === userOrId);
-        } else {
-            userToLogin = userOrId;
-        }
-
-        if (userToLogin) {
-            setCurrentUser(userToLogin);
-            sessionStorage.setItem('currentUserId', userToLogin.id);
-            // Sync with backend
-            apiService.auth.login(userToLogin.name, 'password').catch(console.error);
-        } else {
-            console.error("User not found in list", typeof userOrId === 'string' ? userOrId : userOrId.id);
-        }
+    // Binds the device to a signed-in account: reuses the profile with the account's id, or
+    // creates one (first sign-in on this device).
+    const completeSession = async (acct: AccountInfo, profileFields?: Partial<User>) => {
+        const all = usersRef.current;
+        // Drop undefined fields so they don't overwrite defaults (e.g. no photo chosen).
+        const profile = Object.fromEntries(
+            Object.entries(profileFields || {}).filter(([, v]) => v !== undefined)
+        ) as Partial<User>;
+        const existing = all.find(u => u.id === acct.id);
+        const user: User = existing
+            ? { ...existing, ...profile, email: acct.email, accountLinked: true }
+            : {
+                id: acct.id,
+                name: acct.name || acct.email.split('@')[0],
+                role: 'Admin',
+                avatarUrl: `https://i.pravatar.cc/150?u=${acct.id}`,
+                hasAcceptedTerms: true,
+                ...profile,
+                email: acct.email,
+                accountLinked: true,
+            };
+        await saveUsers(existing ? all.map(u => u.id === user.id ? user : u) : [...all, user]);
+        setCurrentUser(user);
+        setAccount(acct);
+        localStorage.setItem(CURRENT_USER_KEY, user.id);
+        localStorage.setItem(ACCOUNT_KEY, JSON.stringify(acct));
+        setAuthStatus('signedIn');
+        return user;
     };
 
-    const logout = () => {
+    const endSession = () => {
         setCurrentUser(null);
-        sessionStorage.removeItem('currentUserId');
+        setAccount(null);
+        localStorage.removeItem(CURRENT_USER_KEY);
+        localStorage.removeItem(ACCOUNT_KEY);
+        setAuthStatus('signedOut');
+    };
+
+    useEffect(() => {
+        const onExpired = () => {
+            endSession();
+            addToast(t('auth.sessionExpired'), 'info');
+        };
+        window.addEventListener(AUTH_EXPIRED_EVENT, onExpired);
+        return () => window.removeEventListener(AUTH_EXPIRED_EVENT, onExpired);
+    }, [t]);
+
+    const signIn = async (email: string, password: string): Promise<SignInResult> => {
+        const result = await apiService.auth.login(email.trim(), password);
+        if (!result.mfaRequired) await completeSession(result.user);
+        return result;
+    };
+
+    const verifyMfa = async (mfaToken: string, code: string) => {
+        await completeSession(await apiService.auth.verifyMfa(mfaToken, code));
+    };
+
+    const signUp = async (name: string, email: string, password: string, profileId?: string, profile?: Partial<User>) => {
+        const acct = await apiService.auth.register(email.trim(), password, name.trim(), profileId);
+        return completeSession(acct, { name: name.trim(), ...profile });
+    };
+
+    const refreshAccount = async () => {
+        const acct = await apiService.auth.refresh();
+        if (!acct) {
+            endSession();
+            return;
+        }
+        setAccount(acct);
+        localStorage.setItem(ACCOUNT_KEY, JSON.stringify(acct));
+    };
+
+    const logout = async () => {
+        await apiService.auth.logout();
+        endSession();
+    };
+
+    // Server first: if it fails nothing local is touched. Then this device's copy is erased too,
+    // so nothing of the account remains here.
+    const deleteAccount = async (password: string, code?: string) => {
+        await apiService.auth.deleteAccount(password, code);
+        db.close();
+        await db.delete().catch(console.error);
+        localStorage.clear();
+        sessionStorage.clear();
+        window.location.reload();
     };
 
     const updateUser = (userId: string, data: Partial<User>) => {
@@ -459,7 +562,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const activeBusinessId = isPersonalMode ? 'personal' : (business?.id || null);
 
     const value = {
-        currentUser, users, business, isPersonalMode, activeBusinessId, setPersonalMode, login, logout, 
+        currentUser, users, business, isPersonalMode, activeBusinessId, setPersonalMode,
+        account, authStatus, signIn, verifyMfa, signUp, refreshAccount, deleteAccount, logout,
         updateUser, addUser, deleteUser, updateBusiness, createBusiness, joinBusiness, leaveBusiness, getUserById,
         incrementUsage, checkLimit, hasFeature, upgradeTier, applyPromoCode, acceptTerms, isTrialActive, trialDaysLeft, startTrial
     };

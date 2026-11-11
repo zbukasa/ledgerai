@@ -20,7 +20,7 @@ This policy explains what data LedgerAI keeps, how long we keep it and how it is
 ## 4. Deletion
 - **Account Deletion:** You can delete your account from the app or by emailing **tradelab.mantis@gmail.com**. Your account, ledger and bank data are permanently deleted from our production database immediately, and our access to your linked banks is revoked with Plaid. Copies in encrypted backups expire within 30 days.
 - **Bank Disconnection:** Disconnecting a bank revokes our access with Plaid and immediately deletes the accounts, balances and transactions retrieved from it. You can choose to also remove the transactions you imported into your ledger from that bank.
-- **Data on Your Device:** LedgerAI keeps a working copy of your ledger on your device so it works offline. Uninstalling the app removes this copy.
+- **Data on Your Device:** LedgerAI keeps a working copy of your ledger on your device so it works offline. Deleting your account in the app also erases this copy, and uninstalling the app removes it.
 
 ## 5. Security Controls
 - **Encryption:** TLS 1.2 or higher in transit; AES-256 at rest in our database. Bank access tokens are additionally encrypted by our application.

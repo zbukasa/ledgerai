@@ -19,6 +19,7 @@ import DatabaseStatus from './DatabaseStatus';
 
 import { AuditLogView } from './AuditLogView';
 import { HapticService } from '../services/hapticService';
+import SecuritySettings from './SecuritySettings';
 
 interface ProfileProps {
     initialView?: 'main' | 'subscription' | 'audit-log' | 'legal';
@@ -98,9 +99,9 @@ const Profile: React.FC<ProfileProps> = ({ initialView = 'main' }) => {
                 <h1 className="text-3xl md:text-4xl font-bold text-[var(--text-white)] tracking-tight">
                     {t('profile.title')}
                 </h1>
-                <button onClick={logout} className="flex items-center space-x-2 px-4 py-2 rounded-full bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-interactive-hover)] transition-all text-sm font-semibold">
+                <button onClick={() => logout()} className="flex items-center space-x-2 px-4 py-2 rounded-full bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-interactive-hover)] transition-all text-sm font-semibold">
                     <LogOut size={16} />
-                    <span>{t('profile.switchUser')}</span>
+                    <span>{t('security.signOut')}</span>
                 </button>
             </div>
 
@@ -216,6 +217,8 @@ const Profile: React.FC<ProfileProps> = ({ initialView = 'main' }) => {
                 </div>
             </div>
             
+            <SecuritySettings />
+
             {/* Sync Status */}
             <div className="bg-[var(--bg-secondary)] p-6 rounded-3xl border border-[var(--border-primary-translucent)] flex justify-between items-center shadow-sm">
                  <div className="flex items-center gap-3">

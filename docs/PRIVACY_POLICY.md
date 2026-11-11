@@ -32,7 +32,7 @@ We use Plaid, Inc. ("Plaid") to connect your bank accounts. By using our service
 We protect your data with the following safeguards:
 - **Encryption in Transit:** All communication between the app, our servers and our service providers uses TLS 1.2 or higher.
 - **Encryption at Rest:** Our database, hosted by Supabase, is encrypted at rest with AES-256. Bank access tokens are additionally encrypted by our application before they are stored, and are never sent to your device.
-- **Account Security:** Passwords are stored only as salted bcrypt hashes, never in readable form. Login attempts are rate-limited to block password-guessing attacks.
+- **Account Security:** Passwords are stored only as salted bcrypt hashes, never in readable form. Login attempts are rate-limited to block password-guessing attacks. You can turn on two-factor authentication with an authenticator app, and it is required before you connect a bank.
 - **Data Isolation:** Every request for financial data is checked against the signed-in account, so each user can only access their own data.
 - **Access Control:** Access to production systems is limited to authorized personnel on a least-privilege basis and requires multi-factor authentication.
 

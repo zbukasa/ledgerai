@@ -49,6 +49,13 @@ The schema changed (new columns + constraints). Generate and apply a migration:
   - `promo_redemptions` unique on **(user_id, promo_code)**
 - [ ] Existing users have `password_hash = NULL` and cannot log in until they set a
       password — decide on a password-reset / re-onboarding flow for any real accounts.
+- [ ] Sign-in/two-factor (2026-11-10) adds `users.name`, `users.totp_secret_encrypted`,
+      `users.totp_enabled`, `users.totp_last_step`, `users.recovery_code_hashes` and the
+      `auth_sessions` table. Email lookups are now case-insensitive: if any existing rows have
+      mixed-case emails, lowercase them (`UPDATE users SET email = lower(email);`).
+- [ ] Production env: set `TRUST_PROXY_HOPS` if the server is behind more than one proxy
+      (defaults to 1 in production for Cloud Run). `JWT_EXPIRES_IN` now defaults to `15m`
+      (clients refresh silently).
 - [ ] Bank sync never wrote `bank_transactions.connection_id` before 2026-10-16. Unlink and
       push-to-ledger are now scoped by it, so backfill any existing rows (or delete pre-launch
       test data): `UPDATE bank_transactions bt SET connection_id = ba.connection_id FROM
@@ -117,13 +124,14 @@ The schema changed (new columns + constraints). Generate and apply a migration:
       real biometric check (WebAuthn / native) and server-verified subscription state.
 - [ ] **Bundle size**: the main chunk is ~3.6 MB — consider code-splitting.
 - [ ] Bundle a proper password-reset flow for the new `password_hash` requirement.
-- [ ] **The client has no real login.** `BiometricAuth` is a local profile picker and
-      `AuthContext` calls `/auth/token` with the profile *name* and the literal `'password'`,
-      which the hardened server always rejects — so no client feature that needs a server
-      JWT (bank connect, AI proxy, account deletion) works end to end. Needs real
-      email/password sign-in + registration wired to `/auth/*`; consumer MFA builds on it.
-- [ ] **In-app account deletion UI** (server `DELETE /account` exists; needs the real login
-      above, then a Profile-screen button that also wipes the device's local copy).
+- [x] **Real sign-in** (2026-11-10): email/password accounts created during onboarding (or
+      from the sign-in screen, adopting a pre-existing device profile so its ledger is kept),
+      refresh-token sessions, sign-out. Replaces the local profile picker.
+- [x] **Consumer two-factor** (2026-11-10): optional TOTP + 10 recovery codes from Profile →
+      Security; required (server-enforced) before connecting a bank.
+- [x] **In-app account deletion** (2026-11-10): Profile → Security → Delete account (password,
+      plus a code when 2FA is on); also erases the device's local copy.
+- [ ] Password reset by email (needs an email provider).
 - [ ] **Plaid provider**: only `MockBankProvider` exists. The real one must implement
       `revokeAccess` with Plaid `/item/remove`.
 

@@ -3,22 +3,35 @@ import { Transaction, FilterState, User, SavedRoute, RecurringTrip } from '../ty
 
 const API_BASE_URL = ''; // Use relative paths since we are on the same origin
 const TOKEN_KEY = 'auth_token';
+const REFRESH_KEY = 'refresh_token';
+
+/** Fired when the session can't be renewed and the user has to sign in again. */
+export const AUTH_EXPIRED_EVENT = 'auth-expired';
 
 // --- Types ---
 
-interface AuthResponse {
-  access_token: string;
-  token_type: string;
-  user: User;
+export interface AccountInfo {
+  id: string;
+  email: string;
+  name: string | null;
+  tier: string;
+  mfaEnabled: boolean;
 }
 
-interface ApiError {
-  detail: string | { loc: string[]; msg: string; type: string }[];
+interface SessionResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  user: AccountInfo;
 }
+
+export type SignInResult =
+  | { mfaRequired: false; user: AccountInfo }
+  | { mfaRequired: true; mfaToken: string };
 
 // --- Helper Utilities ---
 
-class ServiceError extends Error {
+export class ServiceError extends Error {
   public status: number;
   public detail: any;
 
@@ -47,97 +60,196 @@ const parseDateFields = (data: any): any => {
   return data;
 };
 
+const storeSession = (session: { access_token: string; refresh_token?: string }) => {
+  localStorage.setItem(TOKEN_KEY, session.access_token);
+  if (session.refresh_token) localStorage.setItem(REFRESH_KEY, session.refresh_token);
+};
+
+const clearSession = () => {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_KEY);
+};
+
+// Single in-flight refresh shared by every request that hits a 401 at the same time, so
+// the rotating refresh token is only spent once.
+let refreshInFlight: Promise<AccountInfo | null> | null = null;
+
+/**
+ * Renew the access token. Resolves with the account, or null if the session is gone
+ * (signed out elsewhere, expired, account deleted). Rejects on network errors so callers
+ * can tell "offline" apart from "signed out".
+ */
+function refreshSession(): Promise<AccountInfo | null> {
+  if (refreshInFlight) return refreshInFlight;
+  const refreshToken = localStorage.getItem(REFRESH_KEY);
+  if (!refreshToken) return Promise.resolve(null);
+
+  refreshInFlight = (async () => {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (response.status === 401) {
+      clearSession();
+      return null;
+    }
+    if (!response.ok) throw new ServiceError(response.status, 'Could not refresh session');
+    const session: SessionResponse = await response.json();
+    storeSession(session);
+    return session.user;
+  })().finally(() => {
+    refreshInFlight = null;
+  });
+  return refreshInFlight;
+}
+
+/**
+ * fetch() with the access token attached. On a 401 it renews the session once and retries;
+ * if the session can't be renewed it signals AUTH_EXPIRED_EVENT.
+ */
+export async function authFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
+  const send = () => {
+    const headers = new Headers(options.headers);
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token) headers.set('Authorization', `Bearer ${token}`);
+    return fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
+  };
+
+  let response = await send();
+  if (response.status === 401 && localStorage.getItem(REFRESH_KEY)) {
+    const account = await refreshSession().catch(() => undefined);
+    if (account) {
+      response = await send();
+    } else if (account === null) {
+      window.dispatchEvent(new Event(AUTH_EXPIRED_EVENT));
+    }
+  }
+  return response;
+}
+
+const errorMessage = (data: any, fallback = 'An unexpected error occurred'): string => {
+  if (data?.error && typeof data.error === 'string') return data.error;
+  if (typeof data?.detail === 'string') return data.detail;
+  if (Array.isArray(data?.detail)) return data.detail.map((err: any) => err.msg).join(', ');
+  return fallback;
+};
+
 /**
  * Generic API Client wrapper
  */
 async function apiClient<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem(TOKEN_KEY);
-  
   const headers = new Headers(options.headers);
-  
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
 
   // Set Content-Type to JSON unless we are sending FormData (file uploads)
   if (!(options.body instanceof FormData) && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
   }
 
-  const config: RequestInit = {
-    ...options,
-    headers,
-  };
-
+  let response: Response;
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-
-    if (response.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem(TOKEN_KEY);
-      // Optional: Dispatch a global event or redirect to login
-      window.location.href = '/login'; 
-      throw new ServiceError(401, "Session expired. Please login again.");
-    }
-
-    const responseData = await response.json().catch(() => null);
-
-    if (!response.ok) {
-      let errorMessage = 'An unexpected error occurred';
-      
-      if (responseData && responseData.detail) {
-        if (typeof responseData.detail === 'string') {
-          errorMessage = responseData.detail;
-        } else if (Array.isArray(responseData.detail)) {
-          // Handle FastAPI validation errors
-          errorMessage = responseData.detail.map((err: any) => err.msg).join(', ');
-        }
-      }
-      
-      throw new ServiceError(response.status, errorMessage, responseData);
-    }
-
-    return parseDateFields(responseData) as T;
+    response = await authFetch(endpoint, { ...options, headers });
   } catch (error) {
-    if (error instanceof ServiceError) {
-      throw error;
-    }
     // Network errors
-    throw new ServiceError(500, error instanceof Error ? error.message : 'Network error');
+    throw new ServiceError(0, error instanceof Error ? error.message : 'Network error');
   }
+
+  const responseData = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new ServiceError(response.status, errorMessage(responseData), responseData);
+  }
+
+  return parseDateFields(responseData) as T;
+}
+
+// Auth calls go straight to fetch: they must not trigger the refresh-and-retry logic.
+async function authRequest<T>(endpoint: string, body: unknown): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (error) {
+    throw new ServiceError(0, error instanceof Error ? error.message : 'Network error');
+  }
+  const data = await response.json().catch(() => null);
+  if (!response.ok) throw new ServiceError(response.status, errorMessage(data), data);
+  return data as T;
 }
 
 // --- Service Modules ---
 
 export const authService = {
-  async register(email: string, password: string, name: string): Promise<User> {
-    return apiClient<User>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ email, password, name }),
-    });
+  /** Create an account. `profileId` keeps an existing on-device profile's data attached. */
+  async register(email: string, password: string, name: string, profileId?: string): Promise<AccountInfo> {
+    const session = await authRequest<SessionResponse>('/auth/register', { email, password, name, id: profileId });
+    storeSession(session);
+    return session.user;
   },
 
-  async login(username: string, password: string): Promise<AuthResponse> {
-    // FastAPI OAuth2PasswordRequestForm usually expects form-data, 
-    // but we'll use JSON for this service layer implementation unless strict OAuth2 compliance is needed.
-    const response = await apiClient<AuthResponse>('/auth/token', {
-      method: 'POST',
-      body: JSON.stringify({ username, password }), // Mapping email to username
-    });
-    
-    if (response.access_token) {
-      localStorage.setItem(TOKEN_KEY, response.access_token);
+  async login(email: string, password: string): Promise<SignInResult> {
+    const result = await authRequest<SessionResponse & { mfa_required?: boolean; mfa_token?: string }>(
+      '/auth/token', { username: email, password }
+    );
+    if (result.mfa_required && result.mfa_token) {
+      return { mfaRequired: true, mfaToken: result.mfa_token };
     }
-    return response;
+    storeSession(result);
+    return { mfaRequired: false, user: result.user };
   },
 
-  logout() {
-    localStorage.removeItem(TOKEN_KEY);
+  /** Second sign-in step: an authenticator code or a recovery code. */
+  async verifyMfa(mfaToken: string, code: string): Promise<AccountInfo> {
+    const session = await authRequest<SessionResponse>('/auth/mfa/verify', { mfa_token: mfaToken, code });
+    storeSession(session);
+    return session.user;
+  },
+
+  refresh: refreshSession,
+
+  async logout(): Promise<void> {
+    const refreshToken = localStorage.getItem(REFRESH_KEY);
+    clearSession();
+    if (refreshToken) {
+      // Best effort: the session is already gone from this device either way.
+      await authRequest('/auth/logout', { refresh_token: refreshToken }).catch(() => undefined);
+    }
+  },
+
+  clearLocalSession: clearSession,
+
+  hasSession(): boolean {
+    return !!localStorage.getItem(REFRESH_KEY);
   },
 
   isAuthenticated(): boolean {
     return !!localStorage.getItem(TOKEN_KEY);
-  }
+  },
+
+  getAccessToken(): string | null {
+    return localStorage.getItem(TOKEN_KEY);
+  },
+
+  async mfaSetup(): Promise<{ secret: string; otpauth_url: string; qr_data_url: string }> {
+    return apiClient('/auth/mfa/setup', { method: 'POST' });
+  },
+
+  async mfaEnable(code: string): Promise<{ enabled: true; recovery_codes: string[] }> {
+    return apiClient('/auth/mfa/enable', { method: 'POST', body: JSON.stringify({ code }) });
+  },
+
+  async mfaDisable(password: string, code: string): Promise<{ enabled: false }> {
+    return apiClient('/auth/mfa/disable', { method: 'POST', body: JSON.stringify({ password, code }) });
+  },
+
+  /** Permanently delete the account and everything the server holds for it. */
+  async deleteAccount(password: string, code?: string): Promise<void> {
+    await apiClient('/account', { method: 'DELETE', body: JSON.stringify({ password, code }) });
+    clearSession();
+  },
 };
 
 export const transactionService = {
